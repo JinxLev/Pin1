@@ -232,7 +232,24 @@ pre{margin:0;padding:20px;overflow-x:auto;font-family:'JetBrains Mono',monospace
 .t-led,.t-display{background:rgba(240,165,0,.15);color:var(--accent)}
 .t-battery,.t-power{background:rgba(63,185,80,.15);color:var(--green)}
 .t-resistor,.t-capacitor,.t-wire,.t-button,.t-other{background:rgba(125,133,144,.15);color:var(--muted)}
+
+/* jsPlumb Diagram */
+.jsplumb-diagram{position:relative;width:100%;height:620px;background:var(--surface2);border-radius:var(--rl);overflow:hidden}
+.diagram-board{position:absolute;background:var(--surface);border:2px solid var(--accent);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 24px rgba(0,0,0,0.45);z-index:2;user-select:none}
+.db-icon{font-size:26px;color:var(--accent)}
+.db-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text);text-align:center;padding:0 12px}
+.diagram-comp{position:absolute;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;display:flex;align-items:center;gap:10px;padding:0 14px;box-shadow:0 3px 14px rgba(0,0,0,0.35);z-index:2;user-select:none;transition:border-color .15s,transform .15s,box-shadow .15s}
+.diagram-comp:hover{border-color:var(--accent-border);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.5)}
+.dc-icon{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.dc-info{flex:1;min-width:0}
+.dc-name{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dc-note{font-size:10px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dc-qty{font-family:'JetBrains Mono',monospace;font-size:10px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--accent);flex-shrink:0}
+.jtk-connector path{stroke-linecap:round}
+.jtk-endpoint circle{transition:r .15s}
+.jtk-overlay.wire-label{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);line-height:1}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsPlumb/2.15.6/js/jsplumb.min.js"></script>
 <base target="_blank">
 </head>
 <body>
@@ -267,11 +284,9 @@ pre{margin:0;padding:20px;overflow-x:auto;font-family:'JetBrains Mono',monospace
               <option>Raspberry Pi Pico</option>
             </select>
           </div>
-          <div style="display:flex;flex-direction:column;justify-content:flex-end">
-            <label style="visibility:hidden;margin-bottom:7px">.</label>
-            <div style="font-size:13px;color:var(--muted);padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r)">
-              Describe → Generate → Build
-            </div>
+          <div>
+            <label>Groq API Key</label>
+            <input type="password" id="api-key" placeholder="gsk_..." value="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">
           </div>
         </div>
 
@@ -369,6 +384,7 @@ const SYSTEM_PROMPT = `You are a hardware mentor for beginner engineering studen
 }
 For "type" on each component and "from_type"/"to_type" on each wiring step, pick the single best matching category from this fixed list:
 microcontroller, motor, motor_driver, sensor, battery, power, resistor, capacitor, led, display, button, wire, other
+For the diagram, do not provide individual pin-to-pin wiring details or exact net routing. Return only a high-level block structure: the board block and functional component blocks, with generic subsystem connections. Exclude passive items such as jumper wires, resistors, batteries, and breadboards from the diagram.
 Rules: tailor everything to the chosen board (Arduino uses C++/Arduino IDE; Raspberry Pi uses Python). Keep code complete and ready to run. Assume a beginner — comment generously. List every component including resistors and jumper wires. If the description is vague, make sensible standard choices and proceed.`;
 
 const MAX_CHARS = 2000;
@@ -377,8 +393,9 @@ let lastRequest = 0;
 let rateTimer = null;
 let codeText = '';
 let currentPack = null;
+let pendingDiagram = null;
 
-const API_KEY = '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';
+const API_KEY_STORAGE = 'pin1_api_key';
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
 function switchMainTab(id, el) {
@@ -396,6 +413,14 @@ function switchResTab(id, el) {
   el.classList.add('active');
   parent.querySelectorAll('.res-tab-content').forEach(c => c.classList.remove('active'));
   parent.querySelector('#res-' + id).classList.add('active');
+  if (id === 'diagram') {
+    if (pendingDiagram) {
+      initJsPlumbDiagram(pendingDiagram);
+      pendingDiagram = null;
+    } else if (currentJsPlumb) {
+      setTimeout(() => currentJsPlumb.repaintEverything(), 60);
+    }
+  }
 }
 
 // ── Price database ────────────────────────────────────────────────────────────
@@ -470,7 +495,7 @@ const WOKWI_BOARDS = {
   'raspberry pi':'wokwi-raspberry-pi',
 };
 const WOKWI_COMPS = {
-  'hc-sr04':'wokwi-hc-sr04','ultrasonic':'wokwi-hc-sr04',
+  'ultrasonic':'wokwi-hc-sr04',
   'dht22':'wokwi-dht22','dht11':'wokwi-dht22','am2302':'wokwi-dht22',
   'servo':'wokwi-servo','sg90':'wokwi-servo',
   'lcd':'wokwi-lcd1602','lcd1602':'wokwi-lcd1602','i2c lcd':'wokwi-lcd1602',
@@ -507,92 +532,6 @@ function toWokwiBoard(board) {
   return 'wokwi-arduino-uno';
 }
 
-// ── Board pin specs for diagram ───────────────────────────────────────────────
-const BOARD_SPECS = {
-  'Arduino Uno': {
-    w:320, h:210,
-    pins:[
-      ...Array.from({length:14},(_,i)=>({name:'D'+i, x:-133+i*20.5, y:-105, type:'digital'})),
-      ...Array.from({length:6},(_,i)=>({name:'A'+i, x:-52+i*21, y:105, type:'analog'})),
-      {name:'5V', x:160, y:-85, type:'power'},{name:'3.3V', x:160, y:-65, type:'power'},
-      {name:'GND', x:160, y:-45, type:'gnd'},{name:'Vin', x:160, y:-25, type:'power'},
-      {name:'AREF', x:160, y:-5, type:'analog'},{name:'SDA', x:160, y:15, type:'digital'},{name:'SCL', x:160, y:35, type:'digital'},
-      {name:'GND2', x:160, y:55, type:'gnd'},{name:'GND3', x:-160, y:85, type:'gnd'},
-    ],
-    headers:[
-      {x:0, y:-105, w:300, h:14}, {x:0, y:105, w:130, h:14}, {x:160, y:0, w:14, h:150}
-    ]
-  },
-  'ESP32': {
-    w:260, h:400,
-    pins:[
-      ...Array.from({length:15},(_,i)=>({name:'GPIO'+(i+1), x:-130, y:-180+i*25, type:'digital'})),
-      ...Array.from({length:15},(_,i)=>({name:'GPIO'+(i+16), x:130, y:-180+i*25, type:'digital'})),
-      {name:'3.3V', x:-50, y:-210, type:'power'},{name:'EN', x:0, y:-210, type:'other'},{name:'5V', x:50, y:-210, type:'power'},
-      {name:'GND', x:-70, y:210, type:'gnd'},{name:'GND2', x:70, y:210, type:'gnd'},{name:'VIN', x:0, y:210, type:'power'},
-    ],
-    headers:[
-      {x:-130, y:0, w:14, h:380}, {x:130, y:0, w:14, h:380}
-    ]
-  },
-  'Raspberry Pi': {
-    w:380, h:260,
-    pins:[
-      ...Array.from({length:20},(_,i)=>({name:'GPIO'+(i*2), x:-152+i*16, y:-130, type:'digital'})),
-      ...Array.from({length:20},(_,i)=>({name:'GPIO'+(i*2+1), x:-152+i*16, y:-114, type:'digital'})),
-      {name:'5V', x:-170, y:0, type:'power'},{name:'3.3V', x:-170, y:20, type:'power'},
-      {name:'GND', x:170, y:0, type:'gnd'},{name:'GND2', x:170, y:20, type:'gnd'},
-    ],
-    headers:[
-      {x:0, y:-130, w:330, h:14}, {x:0, y:-114, w:330, h:14}
-    ]
-  },
-  'Raspberry Pi Pico': {
-    w:240, h:340,
-    pins:[
-      ...Array.from({length:14},(_,i)=>({name:'GP'+i, x:-120, y:-157+i*24, type:'digital'})),
-      ...Array.from({length:14},(_,i)=>({name:'GP'+(i+14), x:120, y:-157+i*24, type:'digital'})),
-      {name:'VSYS', x:-40, y:-180, type:'power'},{name:'VBUS', x:40, y:-180, type:'power'},
-      {name:'GND', x:-60, y:180, type:'gnd'},{name:'3V3', x:60, y:180, type:'power'},
-    ],
-    headers:[
-      {x:-120, y:0, w:14, h:340}, {x:120, y:0, w:14, h:340}
-    ]
-  }
-};
-
-function getBoardSpec(boardName) {
-  if (/arduino/i.test(boardName)) return BOARD_SPECS['Arduino Uno'];
-  if (/esp32/i.test(boardName)) return BOARD_SPECS['ESP32'];
-  if (/pico/i.test(boardName)) return BOARD_SPECS['Raspberry Pi Pico'];
-  if (/raspberry\s*pi/i.test(boardName)) return BOARD_SPECS['Raspberry Pi'];
-  return BOARD_SPECS['Arduino Uno'];
-}
-
-function findPin(spec, pinStr) {
-  const s = pinStr.toLowerCase().replace(/[^a-z0-9]/g,'');
-  let p = spec.pins.find(p => s === p.name.toLowerCase().replace(/[^a-z0-9]/g,''));
-  if (p) return p;
-  if (s.includes('5v') || s.includes('vcc')) return spec.pins.find(p => p.name === '5V');
-  if (s.includes('33v') || s.includes('3v3')) return spec.pins.find(p => p.name === '3.3V' || p.name === '3V3');
-  if (s.includes('gnd') || s.includes('ground') || s.includes('agnd')) return spec.pins.find(p => p.name === 'GND' || p.name === 'GND2' || p.name === 'GND3');
-  if (s.includes('vin')) return spec.pins.find(p => p.name === 'Vin' || p.name === 'VIN');
-  if (s.includes('vsys')) return spec.pins.find(p => p.name === 'VSYS');
-  if (s.includes('vbus')) return spec.pins.find(p => p.name === 'VBUS');
-  const dMatch = pinStr.match(/(?:d|gpio|gp)?(\d+)/i);
-  if (dMatch) {
-    const num = dMatch[1];
-    p = spec.pins.find(p => p.name === 'D'+num || p.name === 'GPIO'+num || p.name === 'GP'+num);
-    if (p) return p;
-  }
-  const aMatch = pinStr.match(/a(\d+)/i);
-  if (aMatch) {
-    p = spec.pins.find(p => p.name === 'A'+aMatch[1]);
-    if (p) return p;
-  }
-  return null;
-}
-
 // ── Icon map ──────────────────────────────────────────────────────────────────
 const ICONS = {
   microcontroller:'⬡', motor:'↺', motor_driver:'⬡', sensor:'◎',
@@ -613,6 +552,16 @@ document.getElementById('description').addEventListener('input', function() {
   const el = document.getElementById('char-count');
   el.textContent = n + ' / ' + MAX_CHARS;
   el.className = 'char-count' + (n > 1700 ? ' warn' : '') + (n >= MAX_CHARS ? ' over' : '');
+});
+
+// Load saved API key
+try {
+  const savedKey = localStorage.getItem(API_KEY_STORAGE);
+  if (savedKey) document.getElementById('api-key').value = savedKey;
+} catch(e) {}
+
+document.getElementById('api-key').addEventListener('change', function() {
+  try { localStorage.setItem(API_KEY_STORAGE, this.value.trim()); } catch(e) {}
 });
 
 function fillEx(el) {
@@ -642,9 +591,11 @@ function showError(msg) {
 }
 
 async function generate() {
-  const apiKey = API_KEY;
+  const apiKey = document.getElementById('api-key').value.trim();
   const board = document.getElementById('board').value;
   const desc = document.getElementById('description').value.trim();
+
+  if (!apiKey) { showError('Please enter your Groq API key above.'); return; }
   if (!desc) { showError('Please describe your project first.'); return; }
   if (desc.length > MAX_CHARS) { showError('Description exceeds 2000 character limit.'); return; }
 
@@ -679,7 +630,8 @@ async function generate() {
           model: 'llama-3.3-70b-versatile',
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
-            { role: 'user', content: `BOARD: ${board}\nPROJECT DESCRIPTION: ${desc}` }
+            { role: 'user', content: `BOARD: ${board}
+PROJECT DESCRIPTION: ${desc}` }
           ],
           temperature: 0.7,
           max_tokens: 8192,
@@ -709,376 +661,258 @@ async function generate() {
 }
 
 // ── SVG Diagram Generator ─────────────────────────────────────────────────────
+let currentJsPlumb = null;
+
 function generateDiagram(data, board) {
-  const ns = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(ns, 'svg');
-  svg.setAttribute('viewBox', '0 0 1400 900');
-  svg.style.width = '100%';
-  svg.style.height = 'auto';
-  svg.style.display = 'block';
+  if (currentJsPlumb) { try { currentJsPlumb.reset(); } catch(e){} currentJsPlumb = null; }
 
-  const defs = document.createElementNS(ns, 'defs');
+  const container = document.createElement('div');
+  container.className = 'jsplumb-diagram';
+  container.id = 'jp-' + Date.now();
 
-  // Glow filter for board
-  const filter = document.createElementNS(ns, 'filter');
-  filter.setAttribute('id', 'board-glow');
-  filter.innerHTML = '<feGaussianBlur stdDeviation="4" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>';
-  defs.appendChild(filter);
+  const uid = container.id;
+  const boardLower = board.toLowerCase();
 
-  // Arrow markers
-  const colors = { power:'#f85149', gnd:'#484f58', signal:'#58a6ff', analog:'#bc8cff', default:'#7d8590' };
-  Object.entries(colors).forEach(([name, color]) => {
-    const marker = document.createElementNS(ns, 'marker');
-    marker.setAttribute('id', 'arr-'+name);
-    marker.setAttribute('markerWidth', '10'); marker.setAttribute('markerHeight', '10');
-    marker.setAttribute('refX', '9'); marker.setAttribute('refY', '3');
-    marker.setAttribute('orient', 'auto'); marker.setAttribute('markerUnits', 'strokeWidth');
-    const path = document.createElementNS(ns, 'path');
-    path.setAttribute('d', 'M0,0 L0,6 L9,3 z'); path.setAttribute('fill', color);
-    marker.appendChild(path); defs.appendChild(marker);
-  });
-  svg.appendChild(defs);
-
-  const spec = getBoardSpec(board);
-  const boardX = 700, boardY = 450;
-  const pinPositions = {};
-  const usedPins = new Set();
-
-  // Determine which pins are used in wiring
-  (data.wiring || []).forEach(w => {
-    const bp1 = findPin(spec, w.from);
-    const bp2 = findPin(spec, w.to);
-    if (bp1) usedPins.add(bp1.name.toLowerCase());
-    if (bp2) usedPins.add(bp2.name.toLowerCase());
+  // Filter out the board itself and passive items from component list
+  const passivePattern = /\b(battery|batteries|jumper|jumpers|resistor|resistors|breadboard|breadboards|wire|wires)\b/i;
+  const comps = (data.components || []).filter(c => {
+    const n = c.name.toLowerCase();
+    if (n === boardLower) return false;
+    if (n === 'arduino uno' && boardLower.includes('arduino')) return false;
+    if (n === 'esp32' && boardLower.includes('esp32')) return false;
+    if (n === 'raspberry pi' && boardLower.includes('raspberry') && !boardLower.includes('pico')) return false;
+    if (n === 'raspberry pi pico' && boardLower.includes('pico')) return false;
+    if (passivePattern.test(n)) return false;
+    if (c.type && /^(battery|wire|resistor|capacitor|breadboard|power)$/i.test(c.type)) return false;
+    return true;
   });
 
-  // ── Background grid ──
-  const gridGroup = document.createElementNS(ns, 'g');
-  gridGroup.setAttribute('opacity', '0.05');
-  for (let x = 0; x <= 1400; x += 40) {
-    const line = document.createElementNS(ns, 'line');
-    line.setAttribute('x1', x); line.setAttribute('y1', 0);
-    line.setAttribute('x2', x); line.setAttribute('y2', 900);
-    line.setAttribute('stroke', 'var(--accent)'); line.setAttribute('stroke-width', '1');
-    gridGroup.appendChild(line);
-  }
-  for (let y = 0; y <= 900; y += 40) {
-    const line = document.createElementNS(ns, 'line');
-    line.setAttribute('x1', 0); line.setAttribute('y1', y);
-    line.setAttribute('x2', 1400); line.setAttribute('y2', y);
-    line.setAttribute('stroke', 'var(--accent)'); line.setAttribute('stroke-width', '1');
-    gridGroup.appendChild(line);
-  }
-  svg.appendChild(gridGroup);
-
-  // ── Wires (drawn first so they appear behind board & components) ──
-  const wireGroup = document.createElementNS(ns, 'g');
-  wireGroup.setAttribute('opacity', '0.75');
-
-  (data.wiring || []).forEach(w => {
-    let wireType = 'default';
-    const f = (w.from||'').toLowerCase();
-    const t = (w.to||'').toLowerCase();
-    if (f.includes('5v') || f.includes('3.3v') || f.includes('vcc') || f.includes('vin') || f.includes('vsys') || f.includes('vbus')) wireType = 'power';
-    else if (f.includes('gnd') || f.includes('ground') || f.includes('agnd')) wireType = 'gnd';
-    else if (t.match(/a\d+/) || t.includes('analog') || t.includes('adc')) wireType = 'analog';
-    else wireType = 'signal';
-
-    let x1, y1, x2, y2;
-    let fromCompName = null, toCompName = null;
-
-    for (const c of (data.components||[])) {
-      const cn = c.name.toLowerCase();
-      if (f.startsWith(cn+' ') || f.includes(cn)) { fromCompName = cn; break; }
-    }
-    for (const c of (data.components||[])) {
-      const cn = c.name.toLowerCase();
-      if (t.startsWith(cn+' ') || t.includes(cn)) { toCompName = cn; break; }
-    }
-
-    if (fromCompName) {
-      // component center will be computed later; for now use placeholder and update after comps rendered
-      x1 = boardX; y1 = boardY;
-    } else {
-      const bp = findPin(spec, w.from);
-      if (bp) { x1 = boardX + bp.x; y1 = boardY + bp.y; }
-      else { x1 = boardX; y1 = boardY; }
-    }
-
-    if (toCompName) {
-      x2 = boardX; y2 = boardY;
-    } else {
-      const bp = findPin(spec, w.to);
-      if (bp) { x2 = boardX + bp.x; y2 = boardY + bp.y; }
-      else { x2 = boardX; y2 = boardY; }
-    }
-
-    // Store wire data for second pass after components are placed
-    wireGroup._wires = wireGroup._wires || [];
-    wireGroup._wires.push({x1,y1,x2,y2,wireType,note:w.note,fromCompName,toCompName});
-  });
-
-  svg.appendChild(wireGroup);
-
-  // ── Board shadow ──
-  const shadow = document.createElementNS(ns, 'rect');
-  shadow.setAttribute('x', boardX - spec.w/2 + 6);
-  shadow.setAttribute('y', boardY - spec.h/2 + 6);
-  shadow.setAttribute('width', spec.w);
-  shadow.setAttribute('height', spec.h);
-  shadow.setAttribute('rx', 12);
-  shadow.setAttribute('fill', 'rgba(0,0,0,0.35)');
-  svg.appendChild(shadow);
-
-  // ── Pin headers (strips) ──
-  if (spec.headers) {
-    spec.headers.forEach(h => {
-      const hr = document.createElementNS(ns, 'rect');
-      hr.setAttribute('x', boardX + h.x - h.w/2);
-      hr.setAttribute('y', boardY + h.y - h.h/2);
-      hr.setAttribute('width', h.w);
-      hr.setAttribute('height', h.h);
-      hr.setAttribute('rx', 3);
-      hr.setAttribute('fill', 'var(--surface2)');
-      hr.setAttribute('stroke', 'var(--border)');
-      hr.setAttribute('stroke-width', '1');
-      svg.appendChild(hr);
-    });
-  }
-
-  // ── Board body ──
-  const rect = document.createElementNS(ns, 'rect');
-  rect.setAttribute('x', boardX - spec.w/2);
-  rect.setAttribute('y', boardY - spec.h/2);
-  rect.setAttribute('width', spec.w);
-  rect.setAttribute('height', spec.h);
-  rect.setAttribute('rx', 12);
-  rect.setAttribute('fill', 'var(--surface)');
-  rect.setAttribute('stroke', 'var(--accent)');
-  rect.setAttribute('stroke-width', '2.5');
-  rect.setAttribute('filter', 'url(#board-glow)');
-  svg.appendChild(rect);
-
-  // ── USB port decoration ──
-  const usb = document.createElementNS(ns, 'rect');
-  usb.setAttribute('x', boardX - 24);
-  usb.setAttribute('y', boardY - spec.h/2 - 14);
-  usb.setAttribute('width', 48);
-  usb.setAttribute('height', 14);
-  usb.setAttribute('rx', 4);
-  usb.setAttribute('fill', 'var(--surface2)');
-  usb.setAttribute('stroke', 'var(--border)');
-  usb.setAttribute('stroke-width', '1');
-  svg.appendChild(usb);
-
-  // ── Board label with background pill ──
-  const labelBg = document.createElementNS(ns, 'rect');
-  labelBg.setAttribute('x', boardX - 60);
-  labelBg.setAttribute('y', boardY - 14);
-  labelBg.setAttribute('width', 120);
-  labelBg.setAttribute('height', 28);
-  labelBg.setAttribute('rx', 6);
-  labelBg.setAttribute('fill', 'var(--surface)');
-  labelBg.setAttribute('stroke', 'var(--border2)');
-  labelBg.setAttribute('stroke-width', '1');
-  svg.appendChild(labelBg);
-
-  const boardLabel = document.createElementNS(ns, 'text');
-  boardLabel.setAttribute('x', boardX);
-  boardLabel.setAttribute('y', boardY + 5);
-  boardLabel.setAttribute('text-anchor', 'middle');
-  boardLabel.setAttribute('fill', 'var(--text)');
-  boardLabel.setAttribute('font-size', '15');
-  boardLabel.setAttribute('font-weight', '700');
-  boardLabel.setAttribute('font-family', 'Syne, sans-serif');
-  boardLabel.textContent = board;
-  svg.appendChild(boardLabel);
-
-  // ── Board pins ──
-  spec.pins.forEach(p => {
-    const px = boardX + p.x, py = boardY + p.y;
-    const circle = document.createElementNS(ns, 'circle');
-    circle.setAttribute('cx', px); circle.setAttribute('cy', py); circle.setAttribute('r', 5);
-    circle.setAttribute('fill', colors[p.type] || colors.default);
-    circle.setAttribute('stroke', 'var(--surface)'); circle.setAttribute('stroke-width', '1.5');
-    svg.appendChild(circle);
-
-    if (usedPins.has(p.name.toLowerCase())) {
-      const label = document.createElementNS(ns, 'text');
-      let lx = px, ly = py, anchor = 'middle';
-      const offset = 16;
-      if (p.y <= -spec.h/2 + 15) { ly = py - offset; }
-      else if (p.y >= spec.h/2 - 15) { ly = py + offset + 4; }
-      else if (p.x <= -spec.w/2 + 15) { lx = px - offset; anchor = 'end'; }
-      else { lx = px + offset; anchor = 'start'; }
-
-      label.setAttribute('x', lx);
-      label.setAttribute('y', ly + 3);
-      label.setAttribute('text-anchor', anchor);
-      label.setAttribute('fill', 'var(--muted)');
-      label.setAttribute('font-size', '9');
-      label.setAttribute('font-family', 'JetBrains Mono, monospace');
-      label.setAttribute('font-weight', '500');
-      label.textContent = p.name;
-      svg.appendChild(label);
-    }
-    pinPositions[p.name.toLowerCase()] = {x:px, y:py, type:p.type};
-  });
-
-  // ── Components ──
-  const compList = data.components || [];
-  const compPositions = {};
-  const cardW = 140, cardH = 65;
-  const hSpacing = 180; // Horizontal spacing between columns
-  const vSpacing = 110; // Vertical spacing between rows
-  
-  // Calculate layout: split components into left and right
-  const leftComps = [];
-  const rightComps = [];
-  compList.forEach((c, i) => {
-    if (i % 2 === 0) leftComps.push({c, idx: leftComps.length});
-    else rightComps.push({c, idx: rightComps.length});
-  });
-
-  const drawComponent = (c, cx, cy) => {
-    // Connector dot
-    const dot = document.createElementNS(ns, 'circle');
-    dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.setAttribute('r', 4);
-    dot.setAttribute('fill', 'var(--accent)');
-    svg.appendChild(dot);
-
-    // Shadow
-    const cShadow = document.createElementNS(ns, 'rect');
-    cShadow.setAttribute('x', cx - cardW/2 + 4);
-    cShadow.setAttribute('y', cy - cardH/2 + 4);
-    cShadow.setAttribute('width', cardW); cShadow.setAttribute('height', cardH);
-    cShadow.setAttribute('rx', 10);
-    cShadow.setAttribute('fill', 'rgba(0,0,0,0.4)');
-    svg.appendChild(cShadow);
-
-    // Body
-    const box = document.createElementNS(ns, 'rect');
-    box.setAttribute('x', cx - cardW/2); box.setAttribute('y', cy - cardH/2);
-    box.setAttribute('width', cardW); box.setAttribute('height', cardH);
-    box.setAttribute('rx', 10);
-    box.setAttribute('fill', 'var(--surface2)');
-    box.setAttribute('stroke', 'var(--border)');
-    box.setAttribute('stroke-width', '1.5');
-    svg.appendChild(box);
-
-    // Icon
-    const iconText = document.createElementNS(ns, 'text');
-    iconText.setAttribute('x', cx - cardW/2 + 16);
-    iconText.setAttribute('y', cy + 2);
-    iconText.setAttribute('fill', 'var(--accent)');
-    iconText.setAttribute('font-size', '22');
-    iconText.textContent = icon(c.type);
-    svg.appendChild(iconText);
-
-    // Name
-    const nameText = document.createElementNS(ns, 'text');
-    nameText.setAttribute('x', cx + 2);
-    nameText.setAttribute('y', cy - 6);
-    nameText.setAttribute('fill', 'var(--text)');
-    nameText.setAttribute('font-size', '11');
-    nameText.setAttribute('font-weight', '600');
-    nameText.setAttribute('font-family', 'DM Sans, sans-serif');
-    const displayName = c.name.length > 16 ? c.name.slice(0,14)+'..' : c.name;
-    nameText.textContent = displayName;
-    svg.appendChild(nameText);
-
-    // Qty badge
-    const qtyBg = document.createElementNS(ns, 'rect');
-    qtyBg.setAttribute('x', cx + cardW/2 - 22);
-    qtyBg.setAttribute('y', cy - cardH/2 + 3);
-    qtyBg.setAttribute('width', 20);
-    qtyBg.setAttribute('height', 16);
-    qtyBg.setAttribute('rx', 3);
-    qtyBg.setAttribute('fill', 'var(--accent-dim)');
-    qtyBg.setAttribute('stroke', 'var(--accent-border)');
-    qtyBg.setAttribute('stroke-width', '0.5');
-    svg.appendChild(qtyBg);
-
-    const qtyText = document.createElementNS(ns, 'text');
-    qtyText.setAttribute('x', cx + cardW/2 - 12);
-    qtyText.setAttribute('y', cy - cardH/2 + 13);
-    qtyText.setAttribute('text-anchor', 'middle');
-    qtyText.setAttribute('fill', 'var(--accent)');
-    qtyText.setAttribute('font-size', '9');
-    qtyText.setAttribute('font-weight', '700');
-    qtyText.setAttribute('font-family', 'JetBrains Mono, monospace');
-    qtyText.textContent = '×'+c.quantity;
-    svg.appendChild(qtyText);
-
-    compPositions[c.name.toLowerCase()] = {x:cx, y:cy};
+  const compLookup = Object.fromEntries(comps.map(c => [c.name.toLowerCase(), c]));
+  const sideByName = {};
+  const inputTypes = /^(sensor|button|other)$/i;
+  const outputTypes = /^(motor|motor_driver|led|display|buzzer|power)$/i;
+  const normalizeName = str => String(str || '').toLowerCase().trim();
+  const findCompName = str => {
+    const s = normalizeName(str);
+    if (!s) return null;
+    return Object.keys(compLookup).sort((a, b) => b.length - a.length).find(name => s === name || s.includes(name));
   };
+  const isBoardRef = str => normalizeName(str).includes(boardLower);
 
-  // Draw left side components
-  const leftX = boardX - 360;
-  leftComps.forEach(({c, idx}) => {
-    const cy = boardY - 150 + idx * vSpacing;
-    drawComponent(c, leftX, cy);
+  (data.wiring || []).forEach(w => {
+    const fromName = findCompName(w.from);
+    const toName = findCompName(w.to);
+    const fromIsBoard = isBoardRef(w.from);
+    const toIsBoard = isBoardRef(w.to);
+
+    if (fromName && toIsBoard) sideByName[fromName] = 'left';
+    if (toName && fromIsBoard) sideByName[toName] = 'right';
+
+    if (fromName && toName) {
+      const fromType = compLookup[fromName]?.type || '';
+      const toType = compLookup[toName]?.type || '';
+      if (inputTypes.test(fromType) && outputTypes.test(toType)) {
+        sideByName[fromName] = 'left';
+        sideByName[toName] = 'right';
+      } else if (outputTypes.test(fromType) && inputTypes.test(toType)) {
+        sideByName[fromName] = 'right';
+        sideByName[toName] = 'left';
+      }
+    }
   });
 
-  // Draw right side components
-  const rightX = boardX + 360;
-  rightComps.forEach(({c, idx}) => {
-    const cy = boardY - 150 + idx * vSpacing;
-    drawComponent(c, rightX, cy);
+  comps.forEach(c => {
+    const name = c.name.toLowerCase();
+    if (!sideByName[name]) {
+      if (inputTypes.test(c.type)) sideByName[name] = 'left';
+      else sideByName[name] = 'right';
+    }
+    if (outputTypes.test(c.type)) sideByName[name] = 'right';
   });
 
-  // ── Render wires now that component positions are known ──
-  if (wireGroup._wires) {
-    const boardLeft = boardX - spec.w/2;
-    const boardRight = boardX + spec.w/2;
-    const boardTop = boardY - spec.h/2;
-    const boardBottom = boardY + spec.h/2;
+  const boardId = uid + '-board';
+  const boardNode = document.createElement('div');
+  boardNode.id = boardId;
+  boardNode.className = 'diagram-board';
+  boardNode.innerHTML = '<div class="db-icon">⬡</div><div class="db-name">' + esc(board) + '</div>';
+  container.appendChild(boardNode);
 
-    wireGroup._wires.forEach((w, wIdx) => {
-      let {x1,y1,x2,y2,wireType,note,fromCompName,toCompName} = w;
+  // Component nodes
+  const leftComps = comps.filter(c => sideByName[c.name.toLowerCase()] === 'left');
+  const rightComps = comps.filter(c => sideByName[c.name.toLowerCase()] !== 'left');
+  const compMap = {};
 
-      if (fromCompName && compPositions[fromCompName]) {
-        x1 = compPositions[fromCompName].x;
-        y1 = compPositions[fromCompName].y;
-      }
-      if (toCompName && compPositions[toCompName]) {
-        x2 = compPositions[toCompName].x;
-        y2 = compPositions[toCompName].y;
-      }
+  function addCompNode(c, idx, side) {
+    const id = uid + '-comp-' + idx;
+    const node = document.createElement('div');
+    node.id = id;
+    node.className = 'diagram-comp';
+    const note = (c.note || '').slice(0, 32) + ((c.note || '').length > 32 ? '..' : '');
+    node.innerHTML = '<div class="dc-icon t-' + esc(c.type || 'other') + '">' + icon(c.type) + '</div><div class="dc-info"><div class="dc-name">' + esc(c.name) + '</div><div class="dc-note">' + esc(note) + '</div></div><div class="dc-qty">×' + esc(c.quantity) + '</div>';
+    container.appendChild(node);
+    compMap[c.name.toLowerCase()] = { id, side, data: c };
+    return id;
+  }
 
-      // Smart routing: route around board, not through it
-      let path;
-      const isLeftToRight = x1 < boardX && x2 > boardX;
-      const isRightToLeft = x1 > boardX && x2 < boardX;
-      const isSameSide = (x1 < boardX && x2 < boardX) || (x1 > boardX && x2 > boardX);
+  leftComps.forEach((c, i) => addCompNode(c, i * 2, 'left'));
+  rightComps.forEach((c, i) => addCompNode(c, i * 2 + 1, 'right'));
 
-      if (isLeftToRight || isRightToLeft) {
-        // Crossing left-right: route around top or bottom
-        const routeTop = y1 < boardY || y2 < boardY;
-        const routeY = routeTop ? boardTop - 80 : boardBottom + 80;
-        path = `M${x1},${y1} L${x1},${routeY} L${x2},${routeY} L${x2},${y2}`;
-      } else if (isSameSide) {
-        // Same side: simple vertical connection
-        const midY = (y1 + y2) / 2;
-        path = `M${x1},${y1} L${x1},${midY} L${x2},${midY} L${x2},${y2}`;
-      } else {
-        // Fallback
-        path = `M${x1},${y1} L${x2},${y2}`;
-      }
+  // Store wiring data for init (diagram uses generic block-level connections only)
+  container._wiring = data.wiring || [];
+  container._compMap = compMap;
+  container._boardId = boardId;
+  container._boardName = board;
 
-      const pathEl = document.createElementNS(ns, 'path');
-      pathEl.setAttribute('d', path);
-      pathEl.setAttribute('fill', 'none');
-      pathEl.setAttribute('stroke', colors[wireType]);
-      pathEl.setAttribute('stroke-width', '2');
-      pathEl.setAttribute('stroke-linecap', 'round');
-      pathEl.setAttribute('stroke-linejoin', 'round');
-      pathEl.setAttribute('marker-end', `url(#arr-${wireType})`);
-      wireGroup.appendChild(pathEl);
+  return container;
+}
+
+function initJsPlumbDiagram(container) {
+  if (!container || !container.parentNode) return;
+  if (typeof jsPlumb === 'undefined') {
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:14px">Diagram library failed to load. Please refresh.</div>';
+    return;
+  }
+
+  const instance = jsPlumb.getInstance({
+    Container: container,
+    Connector: ['Bezier', { curviness: 50 }],
+    PaintStyle: { strokeWidth: 2.5 },
+    Endpoint: ['Dot', { radius: 4 }],
+    EndpointStyle: { fill: '#58a6ff', stroke: '#0d1117', strokeWidth: 1.5 },
+    Anchors: ['Continuous', 'Continuous'],
+    ConnectionOverlays: [['Arrow', { width: 10, length: 10, location: 1, id: 'arrow' }]],
+    MaxConnections: -1,
+    DragOptions: { disabled: true }
+  });
+  currentJsPlumb = instance;
+
+  const colors = { power: '#f85149', gnd: '#6e7681', signal: '#58a6ff', analog: '#bc8cff', default: '#7d8590' };
+  const boardId = container._boardId;
+  const compMap = container._compMap;
+  const wiring = container._wiring;
+  const contW = container.offsetWidth || container.parentNode.offsetWidth;
+  const contH = 620;
+
+  // Position board
+  const bEl = document.getElementById(boardId);
+  const bW = 190, bH = 100;
+  bEl.style.left = (contW / 2 - bW / 2) + 'px';
+  bEl.style.top = (contH / 2 - bH / 2) + 'px';
+  bEl.style.width = bW + 'px';
+  bEl.style.height = bH + 'px';
+
+  // Position components
+  const leftList = Object.values(compMap).filter(c => c.side === 'left');
+  const rightList = Object.values(compMap).filter(c => c.side === 'right');
+  const cW = 180, cH = 66;
+
+  function layout(list, xPos) {
+    if (!list.length) return;
+    const totalH = list.length * cH + (list.length - 1) * 55;
+    const startY = (contH - totalH) / 2;
+    list.forEach((c, i) => {
+      const el = document.getElementById(c.id);
+      if (!el) return;
+      el.style.left = xPos + 'px';
+      el.style.top = (startY + i * (cH + 55)) + 'px';
+      el.style.width = cW + 'px';
+      el.style.height = cH + 'px';
     });
   }
 
-  return svg;
+  layout(leftList, 24);
+  layout(rightList, contW - cW - 24);
+
+  // Add endpoints
+  instance.addEndpoint(boardId, {
+    anchor: 'Continuous', isSource: true, isTarget: true, maxConnections: -1,
+    endpoint: ['Dot', { radius: 5 }],
+    paintStyle: { fill: '#f0a500', stroke: '#0d1117', strokeWidth: 2 }
+  });
+
+  Object.values(compMap).forEach(c => {
+    instance.addEndpoint(c.id, {
+      anchor: 'Continuous', isSource: true, isTarget: true, maxConnections: -1,
+      endpoint: ['Dot', { radius: 4 }],
+      paintStyle: { fill: '#7d8590', stroke: '#0d1117', strokeWidth: 1.5 }
+    });
+  });
+
+  // Helper: find which end is a component, preferring longer names first
+  const compEntries = Object.entries(compMap).sort((a, b) => b[0].length - a[0].length);
+  function findComp(str) {
+    const s = String(str || '').toLowerCase().trim();
+    if (!s) return null;
+    for (const [name, info] of compEntries) {
+      if (s === name || s.startsWith(name + ' ') || s.endsWith(' ' + name) || s.includes(' ' + name + ' ') || s.includes(name)) {
+        return { name, ...info };
+      }
+    }
+    return null;
+  }
+
+  const connectedEdges = new Set();
+  const isolated = new Set(Object.values(compMap).map(c => c.id));
+
+  function connectNodes(srcId, tgtId) {
+    if (!srcId || !tgtId || srcId === tgtId) return;
+    const key = srcId < tgtId ? srcId + '::' + tgtId : tgtId + '::' + srcId;
+    if (connectedEdges.has(key)) return;
+    connectedEdges.add(key);
+    try {
+      instance.connect({
+        source: srcId,
+        target: tgtId,
+        paintStyle: { stroke: colors.default, strokeWidth: 2, dashstyle: '4 6' },
+        endpointStyle: { fill: colors.default, stroke: '#0d1117', strokeWidth: 1.5 },
+        overlays: []
+      });
+    } catch (e) {
+      console.warn('jsPlumb connect failed', srcId, tgtId, e);
+    }
+  }
+
+  const motorDriver = Object.values(compMap).find(c => c.data.type === 'motor_driver');
+
+  wiring.forEach(w => {
+    const fromComp = findComp(w.from || '');
+    const toComp = findComp(w.to || '');
+    const fromIsBoard = String(w.from || '').toLowerCase().includes(container._boardName.toLowerCase());
+    const toIsBoard = String(w.to || '').toLowerCase().includes(container._boardName.toLowerCase());
+    const fromIsMotor = fromComp?.data?.type === 'motor';
+    const toIsMotor = toComp?.data?.type === 'motor';
+    const fromIsDriver = fromComp?.data?.type === 'motor_driver';
+    const toIsDriver = toComp?.data?.type === 'motor_driver';
+
+    if (motorDriver && ((fromIsBoard && toIsMotor) || (fromIsMotor && toIsBoard))) {
+      const motorComp = fromIsMotor ? fromComp : toComp;
+      connectNodes(boardId, motorDriver.id);
+      connectNodes(motorDriver.id, motorComp.id);
+      isolated.delete(motorDriver.id);
+      isolated.delete(motorComp.id);
+      return;
+    }
+
+    if (fromComp && toComp) {
+      connectNodes(fromComp.id, toComp.id);
+      isolated.delete(fromComp.id);
+      isolated.delete(toComp.id);
+    } else if (fromComp && toIsBoard) {
+      connectNodes(boardId, fromComp.id);
+      isolated.delete(fromComp.id);
+    } else if (toComp && fromIsBoard) {
+      connectNodes(boardId, toComp.id);
+      isolated.delete(toComp.id);
+    }
+  });
+
+  if (!connectedEdges.size) {
+    Object.values(compMap).forEach(c => connectNodes(boardId, c.id));
+  } else {
+    isolated.forEach(compId => connectNodes(boardId, compId));
+  }
+
+  instance.repaintEverything();
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
@@ -1219,16 +1053,18 @@ function renderResults(data, board) {
 
   document.getElementById('results').classList.add('show');
 
-  setTimeout(() => {
-    const diagram = generateDiagram(data, board);
-    const wrap = document.getElementById('diagram-wrap');
-    if (wrap) wrap.appendChild(diagram);
-  }, 0);
+  // Build diagram but don't init jsPlumb yet — defer until tab is shown
+  const diagram = generateDiagram(data, board);
+  const wrap = document.getElementById('diagram-wrap');
+  if (wrap) {
+    wrap.innerHTML = '';
+    wrap.appendChild(diagram);
+    pendingDiagram = diagram;
+  }
 
   document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// ── Wokwi part mapping ───────────────────────────────────────────────────
 function downloadText(filename, text) {
   const blob = new Blob([text], {type:'text/plain'});
   const url = URL.createObjectURL(blob);
