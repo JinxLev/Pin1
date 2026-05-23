@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pin1 — Hardware Starter Pack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#0d1117;--surface:#161b22;--surface2:#1c2128;
+  --border:#30363d;--border2:#21262d;
+  --text:#e6edf3;--muted:#7d8590;--dim:#484f58;
+  --accent:#f0a500;--accent-dim:rgba(240,165,0,.12);--accent-border:rgba(240,165,0,.28);
+  --blue:#58a6ff;--green:#3fb950;--orange:#f0883e;--red:#f85149;--purple:#bc8cff;
+  --r:8px;--rl:12px;
+}
+
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.6;
+  min-height:100vh;
+}
+
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(240,165,0,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(240,165,0,.025) 1px,transparent 1px);
+  background-size:48px 48px;
+  pointer-events:none;z-index:0;
+}
+
+.wrap{position:relative;z-index:1;max-width:960px;margin:0 auto;padding:44px 20px 100px}
+
+/* ── Header ── */
+header{margin-bottom:36px}
+.badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 11px;margin-bottom:14px;
+  background:var(--accent-dim);border:1px solid var(--accent-border);
+  border-radius:20px;color:var(--accent);font-size:12px;font-weight:500;
+}
+.logo{font-family:'Syne',sans-serif;font-size:46px;font-weight:800;letter-spacing:-2px;line-height:1}
+.logo span{color:var(--accent)}
+.tagline{margin-top:10px;color:var(--muted);font-size:16px;max-width:500px}
+
+/* ── Main Tabs ── */
+.main-tabs{display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid var(--border)}
+.main-tab{padding:10px 18px;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-family:'Syne',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s}
+.main-tab:hover{color:var(--text)}
+.main-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* ── Cards ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
+.card-hd{
+  padding:14px 20px;border-bottom:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.card-title{
+  font-family:'Syne',sans-serif;font-size:13px;font-weight:600;
+  display:flex;align-items:center;gap:8px;
+}
+.card-body{padding:20px}
+
+/* ── Form ── */
+label{
+  display:block;font-size:11px;font-weight:600;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:7px;
+}
+input,select,textarea{
+  width:100%;background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--r);color:var(--text);
+  font-family:'DM Sans',sans-serif;font-size:15px;padding:10px 14px;
+  outline:none;transition:border-color .15s;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+input[type=password]{font-family:'JetBrains Mono',monospace;font-size:13px}
+select{
+  cursor:pointer;-webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7' viewBox='0 0 11 7'%3E%3Cpath fill='%237d8590' d='M5.5 7L0 0h11z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;padding-right:38px;
+}
+select option{background:var(--surface)}
+textarea{resize:vertical;min-height:148px;line-height:1.65}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px}
+@media(max-width:520px){.form-row{grid-template-columns:1fr}}
+
+.char-row{display:flex;justify-content:flex-end;margin-top:5px}
+.char-count{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim)}
+.char-count.warn{color:var(--orange)}
+.char-count.over{color:var(--red)}
+
+.examples-label{font-size:12px;color:var(--dim);margin:12px 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  background:var(--surface2);border:1px solid var(--border);border-radius:20px;
+  padding:5px 13px;font-size:12px;color:var(--muted);cursor:pointer;transition:all .15s;
+}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── Buttons ── */
+.btn-gen{
+  width:100%;padding:14px;margin-top:16px;
+  background:var(--accent);color:#0d1117;border:none;border-radius:var(--r);
+  font-family:'Syne',sans-serif;font-size:15px;font-weight:700;letter-spacing:.02em;
+  cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:9px;
+}
+.btn-gen:hover:not(:disabled){background:#fdb515;transform:translateY(-1px);box-shadow:0 6px 24px rgba(240,165,0,.28)}
+.btn-gen:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+
+.btn-sm{
+  padding:7px 14px;background:transparent;border:1px solid var(--border);
+  border-radius:var(--r);color:var(--muted);font-size:12px;font-family:'DM Sans',sans-serif;
+  cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px;
+}
+.btn-sm:hover{border-color:var(--muted);color:var(--text)}
+
+/* ── Spinner ── */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{width:17px;height:17px;border:2px solid rgba(13,17,23,.3);border-top-color:#0d1117;border-radius:50%;animation:spin .65s linear infinite}
+
+/* ── Rate limit ── */
+.rate-msg{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--orange);text-align:center;margin-top:9px;min-height:18px}
+
+/* ── Error ── */
+.err-box{
+  background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.28);
+  border-radius:var(--r);padding:15px 18px;color:#ff7b72;font-size:14px;
+  margin-top:16px;display:none;
+}
+.err-box.show{display:block}
+.err-title{font-family:'Syne',sans-serif;font-weight:600;margin-bottom:3px}
+
+/* ── Skeleton ── */
+@keyframes shim{0%{background-position:-600px 0}100%{background-position:600px 0}}
+.skel{
+  background:linear-gradient(90deg,var(--surface2) 25%,var(--surface) 50%,var(--surface2) 75%);
+  background-size:1200px 100%;animation:shim 1.4s infinite;border-radius:5px;
+}
+.skel-line{height:14px;margin-bottom:10px}
+.loading{display:none;margin-top:32px}
+.loading.show{display:block}
+.loading-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:560px){.loading-grid{grid-template-columns:1fr}}
+
+/* ── Results ── */
+.results{display:none;margin-top:32px}
+.results.show{display:block}
+.res-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:12px}
+.proj-name{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;color:var(--accent);line-height:1.2}
+.res-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:580px){.res-grid{grid-template-columns:1fr}}
+
+/* Result tabs */
+.res-tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+.res-tab{padding:8px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s}
+.res-tab:hover{border-color:var(--accent);color:var(--accent)}
+.res-tab.active{background:var(--accent-dim);border-color:var(--accent-border);color:var(--accent)}
+.res-tab-content{display:none}
+.res-tab-content.active{display:block}
+
+/* Components */
+.comp{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--border2)}
+.comp:last-child{border-bottom:none}
+.cicon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.cname{font-size:14px;font-weight:500;line-height:1.3}
+.cnote{font-size:12px;color:var(--muted);margin-top:2px}
+.cqty{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;color:var(--muted);margin-left:auto;flex-shrink:0;align-self:flex-start}
+
+/* Wiring */
+.wire{margin-bottom:13px}
+.wcxn{display:flex;align-items:center;gap:8px}
+.wnode{
+  flex:1;min-width:0;padding:7px 10px;border-radius:6px;
+  font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;
+  display:flex;align-items:center;gap:6px;overflow:hidden;
+}
+.wnode span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wfrom{background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.22);color:var(--blue)}
+.wto{background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.22);color:var(--green)}
+.warr{color:var(--dim);font-size:15px;flex-shrink:0}
+.wnote{font-size:11px;color:var(--dim);margin-top:5px;padding-left:2px}
+
+/* Code */
+pre{margin:0;padding:20px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7;max-height:520px;overflow-y:auto}
+.hljs{background:transparent!important}
+.lang-tag{font-size:11px;font-weight:400;color:var(--muted);font-family:'JetBrains Mono',monospace;background:var(--surface2);padding:2px 8px;border-radius:4px;border:1px solid var(--border)}
+
+/* Mistakes */
+.mistake{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px}
+.mistake:last-child{margin-bottom:0}
+.mlabel{font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;margin-bottom:4px}
+.mproblem{font-size:13px;font-weight:500;color:var(--text);margin-bottom:8px}
+.mfix{font-size:13px;color:var(--muted)}
+
+/* Diagram */
+.diagram-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rl);padding:20px;overflow-x:auto}
+.diagram-wrap svg{max-width:100%;height:auto;display:block;margin:0 auto}
+.diagram-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--muted)}
+.diagram-legend span{display:flex;align-items:center;gap:5px}
+.leg-dot{width:10px;height:10px;border-radius:50%}
+
+/* BOM */
+.bom-table{width:100%;border-collapse:collapse;font-size:13px}
+.bom-table th{text-align:left;padding:10px 12px;background:var(--surface2);color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)}
+.bom-table td{padding:10px 12px;border-bottom:1px solid var(--border2);color:var(--text)}
+.bom-table tr:hover td{background:rgba(240,165,0,.04)}
+.bom-total{display:flex;justify-content:flex-end;padding:14px 12px;font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--accent);gap:8px}
+.bom-link{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;color:var(--muted);font-size:11px;text-decoration:none;transition:all .15s}
+.bom-link:hover{border-color:var(--accent);color:var(--accent)}
+
+/* Simulate */
+.sim-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:640px){.sim-grid{grid-template-columns:1fr}}
+.sim-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:16px}
+.sim-card h4{font-family:'Syne',sans-serif;font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text)}
+.sim-card p{font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.5}
+.sim-card pre{background:var(--bg);border:1px solid var(--border2);border-radius:6px;padding:12px;font-size:11px;max-height:220px;overflow:auto;margin-bottom:12px}
+
+/* Library */
+.lib-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.lib-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:16px;cursor:pointer;transition:all .15s;position:relative}
+.lib-card:hover{border-color:var(--accent-border);transform:translateY(-2px)}
+.lib-card h3{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--accent);margin-bottom:6px;line-height:1.3}
+.lib-meta{font-size:12px;color:var(--muted);margin-bottom:12px}
+.lib-actions{display:flex;gap:8px}
+.lib-empty{text-align:center;padding:60px 20px;color:var(--dim);font-size:14px}
+.lib-tag{display:inline-block;padding:2px 8px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;font-size:11px;color:var(--muted);margin-bottom:8px}
+
+/* Tab content generic */
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* Type colour palette */
+.t-microcontroller,.t-motor_driver{background:rgba(188,140,255,.15);color:var(--purple)}
+.t-motor{background:rgba(240,136,62,.15);color:var(--orange)}
+.t-sensor{background:rgba(88,166,255,.15);color:var(--blue)}
+.t-led,.t-display{background:rgba(240,165,0,.15);color:var(--accent)}
+.t-battery,.t-power{background:rgba(63,185,80,.15);color:var(--green)}
+.t-resistor,.t-capacitor,.t-wire,.t-button,.t-other{background:rgba(125,133,144,.15);color:var(--muted)}
+</style>
+<base target="_blank">
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badge">
+      <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" fill="currentColor"/></svg>
+      Hardware starter kit generator
+    </div>
+    <div class="logo">Pin<span>1</span></div>
+    <div class="tagline">Describe your project in plain words — get the parts, wiring, code, diagram, and prices that work.</div>
+  </header>
+
+  <div class="main-tabs">
+    <button class="main-tab active" onclick="switchMainTab('generator',this)">Generator</button>
+    <button class="main-tab" onclick="switchMainTab('library',this)">Library</button>
+  </div>
+
+  <!-- Generator Tab -->
+  <div id="tab-generator" class="tab-content active">
+    <!-- Form -->
+    <div class="card" style="margin-bottom:0">
+      <div class="card-body">
+        <div class="form-row">
+          <div>
+            <label>Board</label>
+            <select id="board">
+              <option>Arduino Uno</option>
+              <option>ESP32</option>
+              <option>Raspberry Pi</option>
+              <option>Raspberry Pi Pico</option>
+            </select>
+          </div>
+          <div style="display:flex;flex-direction:column;justify-content:flex-end">
+            <label style="visibility:hidden;margin-bottom:7px">.</label>
+            <div style="font-size:13px;color:var(--muted);padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r)">
+              Describe → Generate → Build
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:6px">
+          <label>Project description</label>
+          <textarea id="description" maxlength="2000" placeholder="e.g. a line-following robot with two motors and two IR sensors"></textarea>
+          <div class="char-row">
+            <span class="char-count" id="char-count">0 / 2000</span>
+          </div>
+        </div>
+
+        <div class="examples-label">Need ideas? Try one →</div>
+        <div class="chips">
+          <span class="chip" onclick="fillEx(this)">Line-following robot with two motors and IR sensors</span>
+          <span class="chip" onclick="fillEx(this)">Obstacle-avoiding car with ultrasonic sensor</span>
+          <span class="chip" onclick="fillEx(this)">Temperature display with LCD and DHT11 sensor</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-gen" id="btn-gen" onclick="generate()">
+      Generate Starter Pack
+    </button>
+    <div class="rate-msg" id="rate-msg"></div>
+
+    <div class="err-box" id="err-box">
+      <div class="err-title">Generation failed</div>
+      <div id="err-detail"></div>
+    </div>
+
+    <!-- Loading skeleton -->
+    <div class="loading" id="loading">
+      <div style="height:26px;width:220px;margin-bottom:22px" class="skel"></div>
+      <div class="loading-grid">
+        <div class="card"><div class="card-body">
+          <div class="skel skel-line" style="width:55%"></div>
+          <div class="skel skel-line"></div>
+          <div class="skel skel-line" style="width:80%"></div>
+          <div class="skel skel-line" style="width:65%"></div>
+          <div class="skel skel-line" style="width:72%"></div>
+        </div></div>
+        <div class="card"><div class="card-body">
+          <div class="skel skel-line" style="width:70%"></div>
+          <div class="skel skel-line" style="width:90%"></div>
+          <div class="skel skel-line" style="width:60%"></div>
+          <div class="skel skel-line"></div>
+          <div class="skel skel-line" style="width:78%"></div>
+        </div></div>
+      </div>
+      <div class="card"><div class="card-body">
+        <div class="skel skel-line" style="width:40%"></div>
+        <div class="skel skel-line"></div>
+        <div class="skel skel-line" style="width:85%"></div>
+      </div></div>
+    </div>
+
+    <!-- Results rendered here -->
+    <div class="results" id="results"></div>
+  </div>
+
+  <!-- Library Tab -->
+  <div id="tab-library" class="tab-content">
+    <div class="lib-header">
+      <div>
+        <div class="card-title" style="font-size:18px;margin-bottom:4px">Saved Starter Packs</div>
+        <div style="font-size:13px;color:var(--muted)">Stored locally in your browser</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-sm" onclick="importLibrary()">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1v10M4 7l4 4 4-4M2 15h12"/></svg>
+          Import
+        </button>
+        <button class="btn-sm" onclick="exportLibrary()">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 15V5M4 9l4 4 4-4M2 1h12"/></svg>
+          Export All
+        </button>
+      </div>
+    </div>
+    <input type="file" id="lib-import-input" accept=".json" style="display:none" onchange="handleLibImport(this)">
+    <div class="lib-grid" id="lib-grid">
+      <div class="lib-empty">No saved packs yet. Generate a project and hit <strong>Save</strong> to add it here.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SYSTEM_PROMPT = `You are a hardware mentor for beginner engineering students. You will be given a target BOARD and a plain-language PROJECT DESCRIPTION. Return ONLY valid JSON (no markdown, no backticks, no preamble) in exactly this structure:
+{
+  "project_name": "short clear name",
+  "components": [ { "name": "...", "quantity": "1", "note": "what it does in one line", "type": "<category>" } ],
+  "wiring": [ { "from": "component pin", "to": "board pin", "note": "why", "from_type": "<category>", "to_type": "<category>" } ],
+  "code": "complete compilable code as a single string with clear comments on every important line",
+  "common_mistakes": [ { "problem": "what goes wrong", "fix": "how to fix it" } ]
+}
+For "type" on each component and "from_type"/"to_type" on each wiring step, pick the single best matching category from this fixed list:
+microcontroller, motor, motor_driver, sensor, battery, power, resistor, capacitor, led, display, button, wire, other
+Rules: tailor everything to the chosen board (Arduino uses C++/Arduino IDE; Raspberry Pi uses Python). Keep code complete and ready to run. Assume a beginner — comment generously. List every component including resistors and jumper wires. If the description is vague, make sensible standard choices and proceed.`;
+
+const MAX_CHARS = 2000;
+const RATE_LIMIT_MS = 15000;
+let lastRequest = 0;
+let rateTimer = null;
+let codeText = '';
+let currentPack = null;
+
+const API_KEY = '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';
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchMainTab(id, el) {
+  document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  else document.querySelector(`.main-tab[onclick*="'${id}'"]`).classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  if (id === 'library') renderLibrary();
+}
+
+function switchResTab(id, el) {
+  const parent = el.closest('.results');
+  parent.querySelectorAll('.res-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  parent.querySelectorAll('.res-tab-content').forEach(c => c.classList.remove('active'));
+  parent.querySelector('#res-' + id).classList.add('active');
+}
+
+// ── Price database ────────────────────────────────────────────────────────────
+const PRICE_DB = [
+  {re:/arduino\s*uno/i, price:22.00, urls:{dig:'https://www.digikey.com/en/products/filter/arduino/768', mous:'https://www.mouser.com/c/?q=Arduino+Uno', amz:'https://www.amazon.com/s?k=arduino+uno+r3'}},
+  {re:/esp32/i, price:6.50, urls:{dig:'https://www.digikey.com/en/products/filter/wi-fi-modules/859', mous:'https://www.mouser.com/c/?q=esp32+devkit', amz:'https://www.amazon.com/s?k=esp32+devkit+v1'}},
+  {re:/raspberry\s*pi\s*pico/i, price:4.00, urls:{dig:'https://www.digikey.com/en/products/filter/raspberry-pi/768', mous:'https://www.mouser.com/c/?q=raspberry+pi+pico', amz:'https://www.amazon.com/s?k=raspberry+pi+pico'}},
+  {re:/raspberry\s*pi(?!.*pico)/i, price:35.00, urls:{dig:'https://www.digikey.com/en/products/filter/raspberry-pi/768', mous:'https://www.mouser.com/c/?q=raspberry+pi+4', amz:'https://www.amazon.com/s?k=raspberry+pi+4'}},
+  {re:/hc-sr04/i, price:3.50, urls:{dig:'https://www.digikey.com/en/products/filter/ultrasonic-receivers-transmitters/159', mous:'https://www.mouser.com/c/?q=hc-sr04', amz:'https://www.amazon.com/s?k=hc-sr04'}},
+  {re:/dht22|am2302/i, price:5.50, urls:{dig:'https://www.digikey.com/en/products/filter/humidity-sensors/524', mous:'https://www.mouser.com/c/?q=dht22', amz:'https://www.amazon.com/s?k=dht22'}},
+  {re:/dht11/i, price:3.00, urls:{dig:'https://www.digikey.com/en/products/filter/humidity-sensors/524', mous:'https://www.mouser.com/c/?q=dht11', amz:'https://www.amazon.com/s?k=dht11'}},
+  {re:/servo|sg90/i, price:3.50, urls:{dig:'https://www.digikey.com/en/products/filter/servo-motors/218', mous:'https://www.mouser.com/c/?q=sg90+servo', amz:'https://www.amazon.com/s?k=sg90+servo'}},
+  {re:/l298n|motor\s*driver/i, price:8.00, urls:{dig:'https://www.digikey.com/en/products/filter/motor-drivers/218', mous:'https://www.mouser.com/c/?q=l298n', amz:'https://www.amazon.com/s?k=l298n+motor+driver'}},
+  {re:/lcd\s*(1602|i2c|16x2)/i, price:10.00, urls:{dig:'https://www.digikey.com/en/products/filter/lcd-character-displays/219', mous:'https://www.mouser.com/c/?q=lcd1602+i2c', amz:'https://www.amazon.com/s?k=lcd1602+i2c'}},
+  {re:/oled|ssd1306/i, price:7.00, urls:{dig:'https://www.digikey.com/en/products/filter/oled-displays/524', mous:'https://www.mouser.com/c/?q=ssd1306', amz:'https://www.amazon.com/s?k=ssd1306+oled'}},
+  {re:/led|rgb|neopixel/i, price:0.15, urls:{dig:'https://www.digikey.com/en/products/filter/led-emitters/548', mous:'https://www.mouser.com/c/?q=5mm+led', amz:'https://www.amazon.com/s?k=5mm+led'}},
+  {re:/resistor\s*220|220\s*ohm/i, price:0.05, urls:{dig:'https://www.digikey.com/en/products/filter/through-hole-resistors/53', mous:'https://www.mouser.com/c/?q=220+ohm+resistor', amz:'https://www.amazon.com/s?k=220+ohm+resistor'}},
+  {re:/resistor\s*1k|1k\s*ohm/i, price:0.05, urls:{dig:'https://www.digikey.com/en/products/filter/through-hole-resistors/53', mous:'https://www.mouser.com/c/?q=1k+ohm+resistor', amz:'https://www.amazon.com/s?k=1k+ohm+resistor'}},
+  {re:/resistor\s*10k|10k\s*ohm/i, price:0.05, urls:{dig:'https://www.digikey.com/en/products/filter/through-hole-resistors/53', mous:'https://www.mouser.com/c/?q=10k+ohm+resistor', amz:'https://www.amazon.com/s?k=10k+ohm+resistor'}},
+  {re:/resistor/i, price:0.05, urls:{dig:'https://www.digikey.com/en/products/filter/through-hole-resistors/53', mous:'https://www.mouser.com/c/?q=through+hole+resistor', amz:'https://www.amazon.com/s?k=assorted+resistors'}},
+  {re:/capacitor/i, price:0.10, urls:{dig:'https://www.digikey.com/en/products/filter/ceramic-capacitors/60', mous:'https://www.mouser.com/c/?q=ceramic+capacitor', amz:'https://www.amazon.com/s?k=ceramic+capacitor+kit'}},
+  {re:/breadboard/i, price:5.00, urls:{dig:'https://www.digikey.com/en/products/filter/breadboards/2057', mous:'https://www.mouser.com/c/?q=solderless+breadboard', amz:'https://www.amazon.com/s?k=solderless+breadboard'}},
+  {re:/jumper\s*wire|dupont/i, price:3.00, urls:{dig:'https://www.digikey.com/en/products/filter/jumper-wires/2058', mous:'https://www.mouser.com/c/?q=jumper+wires', amz:'https://www.amazon.com/s?k=jumper+wires+arduino'}},
+  {re:/potentiometer/i, price:1.50, urls:{dig:'https://www.digikey.com/en/products/filter/rotary-potentiometers/59', mous:'https://www.mouser.com/c/?q=10k+potentiometer', amz:'https://www.amazon.com/s?k=10k+potentiometer'}},
+  {re:/push\s*button|tactile/i, price:0.25, urls:{dig:'https://www.digikey.com/en/products/filter/tactile-switches/401', mous:'https://www.mouser.com/c/?q=tactile+button', amz:'https://www.amazon.com/s?k=tactile+push+button'}},
+  {re:/buzzer|piezo/i, price:1.00, urls:{dig:'https://www.digikey.com/en/products/filter/buzzers/157', mous:'https://www.mouser.com/c/?q=piezo+buzzer', amz:'https://www.amazon.com/s?k=piezo+buzzer'}},
+  {re:/relay/i, price:2.50, urls:{dig:'https://www.digikey.com/en/products/filter/relays/177', mous:'https://www.mouser.com/c/?q=5v+relay+module', amz:'https://www.amazon.com/s?k=5v+relay+module'}},
+  {re:/ir\s*sensor|infrared|photodiode|phototransistor|tsop|ir\s*receiver/i, price:2.00, urls:{dig:'https://www.digikey.com/en/products/filter/infrared-receivers/158', mous:'https://www.mouser.com/c/?q=ir+sensor', amz:'https://www.amazon.com/s?k=ir+sensor+arduino'}},
+  {re:/ultrasonic|ping\s*sensor/i, price:3.50, urls:{dig:'https://www.digikey.com/en/products/filter/ultrasonic-receivers-transmitters/159', mous:'https://www.mouser.com/c/?q=ultrasonic+sensor', amz:'https://www.amazon.com/s?k=ultrasonic+sensor+arduino'}},
+  {re:/mpu6050|gyro|accelerometer|imu/i, price:4.50, urls:{dig:'https://www.digikey.com/en/products/filter/accelerometers/87', mous:'https://www.mouser.com/c/?q=mpu6050', amz:'https://www.amazon.com/s?k=mpu6050'}},
+  {re:/nrf24/i, price:4.00, urls:{dig:'https://www.digikey.com/en/products/filter/rf-transceiver-modules/859', mous:'https://www.mouser.com/c/?q=nrf24l01', amz:'https://www.amazon.com/s?k=nrf24l01'}},
+  {re:/bluetooth|hc-05|hc-06/i, price:6.00, urls:{dig:'https://www.digikey.com/en/products/filter/bluetooth-modules/859', mous:'https://www.mouser.com/c/?q=hc-05', amz:'https://www.amazon.com/s?k=hc-05+bluetooth'}},
+  {re:/battery|power\s*supply/i, price:12.00, urls:{dig:'https://www.digikey.com/en/products/filter/battery-holders/91', mous:'https://www.mouser.com/c/?q=battery+holder', amz:'https://www.amazon.com/s?k=9v+battery+arduino'}},
+  {re:/usb\s*cable/i, price:3.00, urls:{dig:'https://www.digikey.com/en/products/filter/usb-cables/89', mous:'https://www.mouser.com/c/?q=usb+cable', amz:'https://www.amazon.com/s?k=usb+cable'}},
+  {re:/dc\s*motor/i, price:3.00, urls:{dig:'https://www.digikey.com/en/products/filter/dc-motors/218', mous:'https://www.mouser.com/c/?q=dc+motor', amz:'https://www.amazon.com/s?k=dc+motor+arduino'}},
+  {re:/stepper\s*motor|28byj/i, price:5.00, urls:{dig:'https://www.digikey.com/en/products/filter/stepper-motors/218', mous:'https://www.mouser.com/c/?q=28byj+stepper', amz:'https://www.amazon.com/s?k=28byj+stepper+motor'}},
+  {re:/micro\s*sd|sd\s*card/i, price:4.00, urls:{dig:'https://www.digikey.com/en/products/filter/memory-card-modules/524', mous:'https://www.mouser.com/c/?q=micro+sd+module', amz:'https://www.amazon.com/s?k=micro+sd+card+module'}},
+  {re:/rtc|ds3231/i, price:5.00, urls:{dig:'https://www.digikey.com/en/products/filter/real-time-clocks/524', mous:'https://www.mouser.com/c/?q=ds3231', amz:'https://www.amazon.com/s?k=ds3231+rtc'}},
+  {re:/joystick/i, price:3.50, urls:{dig:'https://www.digikey.com/en/products/filter/joystick-switches/401', mous:'https://www.mouser.com/c/?q=arduino+joystick', amz:'https://www.amazon.com/s?k=arduino+joystick+module'}},
+  {re:/pir|motion/i, price:4.00, urls:{dig:'https://www.digikey.com/en/products/filter/pir-sensors/524', mous:'https://www.mouser.com/c/?q=pir+motion+sensor', amz:'https://www.amazon.com/s?k=pir+sensor+arduino'}},
+  {re:/gas\s*sensor|mq-2|mq-135/i, price:5.00, urls:{dig:'https://www.digikey.com/en/products/filter/gas-sensors/524', mous:'https://www.mouser.com/c/?q=mq-2+gas+sensor', amz:'https://www.amazon.com/s?k=mq-2+gas+sensor'}},
+  {re:/load\s*cell|hx711/i, price:6.00, urls:{dig:'https://www.digikey.com/en/products/filter/force-sensors/100', mous:'https://www.mouser.com/c/?q=hx711', amz:'https://www.amazon.com/s?k=hx711+load+cell'}},
+  {re:/rfid|rc522/i, price:5.00, urls:{dig:'https://www.digikey.com/en/products/filter/rfid-modules/859', mous:'https://www.mouser.com/c/?q=rc522', amz:'https://www.amazon.com/s?k=rc522+rfid'}},
+  {re:/gps|neo-6m/i, price:12.00, urls:{dig:'https://www.digikey.com/en/products/filter/gps-modules/859', mous:'https://www.mouser.com/c/?q=neo-6m', amz:'https://www.amazon.com/s?k=neo-6m+gps'}},
+  {re:/camera|ov7670|esp32-cam/i, price:8.00, urls:{dig:'https://www.digikey.com/en/products/filter/camera-modules/524', mous:'https://www.mouser.com/c/?q=ov7670', amz:'https://www.amazon.com/s?k=esp32+cam'}},
+  {re:/mosfet|transistor/i, price:0.50, urls:{dig:'https://www.digikey.com/en/products/filter/transistors/13', mous:'https://www.mouser.com/c/?q=mosfet', amz:'https://www.amazon.com/s?k=mosfet+transistor+kit'}},
+  {re:/diode|1n4007/i, price:0.10, urls:{dig:'https://www.digikey.com/en/products/filter/diodes/14', mous:'https://www.mouser.com/c/?q=1n4007', amz:'https://www.amazon.com/s?k=1n4007+diode'}},
+  {re:/breadboard\s*power/i, price:3.50, urls:{dig:'https://www.digikey.com/en/products/filter/power-management-ics/524', mous:'https://www.mouser.com/c/?q=breadboard+power+supply', amz:'https://www.amazon.com/s?k=breadboard+power+supply'}},
+  {re:/encoder|rotary/i, price:2.50, urls:{dig:'https://www.digikey.com/en/products/filter/rotary-encoders/401', mous:'https://www.mouser.com/c/?q=rotary+encoder', amz:'https://www.amazon.com/s?k=rotary+encoder+arduino'}},
+  {re:/shift\s*register|74hc595/i, price:1.00, urls:{dig:'https://www.digikey.com/en/products/filter/shift-registers/524', mous:'https://www.mouser.com/c/?q=74hc595', amz:'https://www.amazon.com/s?k=74hc595'}},
+  {re:/temperature|thermistor|lm35/i, price:2.00, urls:{dig:'https://www.digikey.com/en/products/filter/temperature-sensors/524', mous:'https://www.mouser.com/c/?q=lm35', amz:'https://www.amazon.com/s?k=lm35+temperature+sensor'}},
+  {re:/pressure|bmp280|bme280/i, price:5.00, urls:{dig:'https://www.digikey.com/en/products/filter/pressure-sensors/100', mous:'https://www.mouser.com/c/?q=bmp280', amz:'https://www.amazon.com/s?k=bmp280'}},
+  {re:/touch|ttp223/i, price:1.50, urls:{dig:'https://www.digikey.com/en/products/filter/touch-sensors/524', mous:'https://www.mouser.com/c/?q=ttp223', amz:'https://www.amazon.com/s?k=ttp223+touch+sensor'}},
+  {re:/microphone|sound|ky-038/i, price:3.00, urls:{dig:'https://www.digikey.com/en/products/filter/microphones/159', mous:'https://www.mouser.com/c/?q=sound+sensor+arduino', amz:'https://www.amazon.com/s?k=sound+sensor+arduino'}},
+  {re:/relay\s*module|8\s*channel/i, price:9.00, urls:{dig:'https://www.digikey.com/en/products/filter/relays/177', mous:'https://www.mouser.com/c/?q=relay+module', amz:'https://www.amazon.com/s?k=relay+module+arduino'}},
+  {re:/logic\s*level|converter/i, price:2.00, urls:{dig:'https://www.digikey.com/en/products/filter/logic-level-translators/524', mous:'https://www.mouser.com/c/?q=logic+level+converter', amz:'https://www.amazon.com/s?k=logic+level+converter'}},
+  {re:/cable|wire|jumper/i, price:3.00, urls:{dig:'https://www.digikey.com/en/products/filter/jumper-wires/2058', mous:'https://www.mouser.com/c/?q=jumper+wires', amz:'https://www.amazon.com/s?k=jumper+wires'}},
+];
+
+function priceLookup(name) {
+  for (const item of PRICE_DB) {
+    if (item.re.test(name)) return item;
+  }
+  return null;
+}
+
+// ── Wokwi part mapping ───────────────────────────────────────────────────────
+const WOKWI_BOARDS = {
+  'arduino uno':'wokwi-arduino-uno',
+  'esp32':'wokwi-esp32-devkit-v1',
+  'raspberry pi pico':'wokwi-pi-pico',
+  'raspberry pi':'wokwi-raspberry-pi',
+};
+const WOKWI_COMPS = {
+  'hc-sr04':'wokwi-hc-sr04','ultrasonic':'wokwi-hc-sr04',
+  'dht22':'wokwi-dht22','dht11':'wokwi-dht22','am2302':'wokwi-dht22',
+  'servo':'wokwi-servo','sg90':'wokwi-servo',
+  'lcd':'wokwi-lcd1602','lcd1602':'wokwi-lcd1602','i2c lcd':'wokwi-lcd1602',
+  'led':'wokwi-led','rgb led':'wokwi-led',
+  'resistor':'wokwi-resistor',
+  'potentiometer':'wokwi-potentiometer',
+  'pushbutton':'wokwi-pushbutton','button':'wokwi-pushbutton','tactile':'wokwi-pushbutton',
+  'buzzer':'wokwi-buzzer','piezo':'wokwi-buzzer',
+  'relay':'wokwi-relay-module','relay module':'wokwi-relay-module',
+  'mpu6050':'wokwi-mpu6050',
+  'nrf24l01':'wokwi-nrf24l01',
+  'pir':'wokwi-pir-sensor','motion':'wokwi-pir-sensor',
+  'joystick':'wokwi-joystick',
+  'ssd1306':'wokwi-ssd1306','oled':'wokwi-ssd1306',
+  'neopixel':'wokwi-neopixel','ws2812':'wokwi-neopixel',
+  'dc-motor':'wokwi-dc-motor','dc motor':'wokwi-dc-motor',
+  'stepper':'wokwi-stepper-motor','28byj':'wokwi-stepper-motor',
+  'hc-sr04':'wokwi-hc-sr04',
+};
+
+function toWokwiPart(name) {
+  const s = name.toLowerCase();
+  for (const [key, val] of Object.entries(WOKWI_COMPS)) {
+    if (s.includes(key)) return val;
+  }
+  return null;
+}
+
+function toWokwiBoard(board) {
+  const s = board.toLowerCase();
+  for (const [key, val] of Object.entries(WOKWI_BOARDS)) {
+    if (s.includes(key)) return val;
+  }
+  return 'wokwi-arduino-uno';
+}
+
+// ── Board pin specs for diagram ───────────────────────────────────────────────
+const BOARD_SPECS = {
+  'Arduino Uno': {
+    w:320, h:210,
+    pins:[
+      ...Array.from({length:14},(_,i)=>({name:'D'+i, x:-133+i*20.5, y:-105, type:'digital'})),
+      ...Array.from({length:6},(_,i)=>({name:'A'+i, x:-52+i*21, y:105, type:'analog'})),
+      {name:'5V', x:160, y:-85, type:'power'},{name:'3.3V', x:160, y:-65, type:'power'},
+      {name:'GND', x:160, y:-45, type:'gnd'},{name:'Vin', x:160, y:-25, type:'power'},
+      {name:'AREF', x:160, y:-5, type:'analog'},{name:'SDA', x:160, y:15, type:'digital'},{name:'SCL', x:160, y:35, type:'digital'},
+      {name:'GND2', x:160, y:55, type:'gnd'},{name:'GND3', x:-160, y:85, type:'gnd'},
+    ],
+    headers:[
+      {x:0, y:-105, w:300, h:14}, {x:0, y:105, w:130, h:14}, {x:160, y:0, w:14, h:150}
+    ]
+  },
+  'ESP32': {
+    w:260, h:400,
+    pins:[
+      ...Array.from({length:15},(_,i)=>({name:'GPIO'+(i+1), x:-130, y:-180+i*25, type:'digital'})),
+      ...Array.from({length:15},(_,i)=>({name:'GPIO'+(i+16), x:130, y:-180+i*25, type:'digital'})),
+      {name:'3.3V', x:-50, y:-210, type:'power'},{name:'EN', x:0, y:-210, type:'other'},{name:'5V', x:50, y:-210, type:'power'},
+      {name:'GND', x:-70, y:210, type:'gnd'},{name:'GND2', x:70, y:210, type:'gnd'},{name:'VIN', x:0, y:210, type:'power'},
+    ],
+    headers:[
+      {x:-130, y:0, w:14, h:380}, {x:130, y:0, w:14, h:380}
+    ]
+  },
+  'Raspberry Pi': {
+    w:380, h:260,
+    pins:[
+      ...Array.from({length:20},(_,i)=>({name:'GPIO'+(i*2), x:-152+i*16, y:-130, type:'digital'})),
+      ...Array.from({length:20},(_,i)=>({name:'GPIO'+(i*2+1), x:-152+i*16, y:-114, type:'digital'})),
+      {name:'5V', x:-170, y:0, type:'power'},{name:'3.3V', x:-170, y:20, type:'power'},
+      {name:'GND', x:170, y:0, type:'gnd'},{name:'GND2', x:170, y:20, type:'gnd'},
+    ],
+    headers:[
+      {x:0, y:-130, w:330, h:14}, {x:0, y:-114, w:330, h:14}
+    ]
+  },
+  'Raspberry Pi Pico': {
+    w:240, h:340,
+    pins:[
+      ...Array.from({length:14},(_,i)=>({name:'GP'+i, x:-120, y:-157+i*24, type:'digital'})),
+      ...Array.from({length:14},(_,i)=>({name:'GP'+(i+14), x:120, y:-157+i*24, type:'digital'})),
+      {name:'VSYS', x:-40, y:-180, type:'power'},{name:'VBUS', x:40, y:-180, type:'power'},
+      {name:'GND', x:-60, y:180, type:'gnd'},{name:'3V3', x:60, y:180, type:'power'},
+    ],
+    headers:[
+      {x:-120, y:0, w:14, h:340}, {x:120, y:0, w:14, h:340}
+    ]
+  }
+};
+
+function getBoardSpec(boardName) {
+  if (/arduino/i.test(boardName)) return BOARD_SPECS['Arduino Uno'];
+  if (/esp32/i.test(boardName)) return BOARD_SPECS['ESP32'];
+  if (/pico/i.test(boardName)) return BOARD_SPECS['Raspberry Pi Pico'];
+  if (/raspberry\s*pi/i.test(boardName)) return BOARD_SPECS['Raspberry Pi'];
+  return BOARD_SPECS['Arduino Uno'];
+}
+
+function findPin(spec, pinStr) {
+  const s = pinStr.toLowerCase().replace(/[^a-z0-9]/g,'');
+  let p = spec.pins.find(p => s === p.name.toLowerCase().replace(/[^a-z0-9]/g,''));
+  if (p) return p;
+  if (s.includes('5v') || s.includes('vcc')) return spec.pins.find(p => p.name === '5V');
+  if (s.includes('33v') || s.includes('3v3')) return spec.pins.find(p => p.name === '3.3V' || p.name === '3V3');
+  if (s.includes('gnd') || s.includes('ground') || s.includes('agnd')) return spec.pins.find(p => p.name === 'GND' || p.name === 'GND2' || p.name === 'GND3');
+  if (s.includes('vin')) return spec.pins.find(p => p.name === 'Vin' || p.name === 'VIN');
+  if (s.includes('vsys')) return spec.pins.find(p => p.name === 'VSYS');
+  if (s.includes('vbus')) return spec.pins.find(p => p.name === 'VBUS');
+  const dMatch = pinStr.match(/(?:d|gpio|gp)?(\d+)/i);
+  if (dMatch) {
+    const num = dMatch[1];
+    p = spec.pins.find(p => p.name === 'D'+num || p.name === 'GPIO'+num || p.name === 'GP'+num);
+    if (p) return p;
+  }
+  const aMatch = pinStr.match(/a(\d+)/i);
+  if (aMatch) {
+    p = spec.pins.find(p => p.name === 'A'+aMatch[1]);
+    if (p) return p;
+  }
+  return null;
+}
+
+// ── Icon map ──────────────────────────────────────────────────────────────────
+const ICONS = {
+  microcontroller:'⬡', motor:'↺', motor_driver:'⬡', sensor:'◎',
+  battery:'⊡', power:'⚡', resistor:'≈', capacitor:'⊟',
+  led:'●', display:'▦', button:'□', wire:'∿', other:'◇'
+};
+function icon(t){ return ICONS[t] || '◇'; }
+
+// ── HTML escape ───────────────────────────────────────────────────────────────
+function esc(s){
+  return String(s||'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.getElementById('description').addEventListener('input', function() {
+  const n = this.value.length;
+  const el = document.getElementById('char-count');
+  el.textContent = n + ' / ' + MAX_CHARS;
+  el.className = 'char-count' + (n > 1700 ? ' warn' : '') + (n >= MAX_CHARS ? ' over' : '');
+});
+
+function fillEx(el) {
+  const ta = document.getElementById('description');
+  ta.value = el.textContent;
+  ta.dispatchEvent(new Event('input'));
+}
+
+function setLoading(on) {
+  const btn = document.getElementById('btn-gen');
+  btn.disabled = on;
+  btn.innerHTML = on
+    ? '<div class="spin"></div> Building your starter pack…'
+    : 'Generate Starter Pack';
+  document.getElementById('loading').classList.toggle('show', on);
+  if (on) {
+    document.getElementById('results').classList.remove('show');
+    document.getElementById('err-box').classList.remove('show');
+    document.getElementById('rate-msg').textContent = '';
+  }
+}
+
+function showError(msg) {
+  document.getElementById('err-detail').textContent = msg;
+  document.getElementById('err-box').classList.add('show');
+  setLoading(false);
+}
+
+async function generate() {
+  const apiKey = API_KEY;
+  const board = document.getElementById('board').value;
+  const desc = document.getElementById('description').value.trim();
+  if (!desc) { showError('Please describe your project first.'); return; }
+  if (desc.length > MAX_CHARS) { showError('Description exceeds 2000 character limit.'); return; }
+
+  const now = Date.now();
+  const elapsed = now - lastRequest;
+  if (lastRequest > 0 && elapsed < RATE_LIMIT_MS) {
+    let secs = Math.ceil((RATE_LIMIT_MS - elapsed) / 1000);
+    const msg = document.getElementById('rate-msg');
+    msg.textContent = `Please wait ${secs}s…`;
+    clearInterval(rateTimer);
+    rateTimer = setInterval(() => {
+      secs--;
+      if (secs <= 0) { clearInterval(rateTimer); msg.textContent = ''; }
+      else msg.textContent = `Please wait ${secs}s…`;
+    }, 1000);
+    return;
+  }
+
+  lastRequest = Date.now();
+  setLoading(true);
+
+  try {
+    const res = await fetch(
+      'https://api.groq.com/openai/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: `BOARD: ${board}\nPROJECT DESCRIPTION: ${desc}` }
+          ],
+          temperature: 0.7,
+          max_tokens: 8192,
+          response_format: { type: 'json_object' }
+        })
+      }
+    );
+
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      const detail = errJson?.error?.message || `HTTP ${res.status} ${res.statusText}`;
+      throw new Error(detail);
+    }
+
+    const json = await res.json();
+    const raw = json?.choices?.[0]?.message?.content;
+    if (!raw) throw new Error('Empty response from Groq. Try again.');
+
+    let data;
+    try { data = JSON.parse(raw); }
+    catch { throw new Error('Groq returned unexpected format. Try again.'); }
+
+    renderResults(data, board);
+  } catch (err) {
+    showError(err.message || 'Unknown error.');
+  }
+}
+
+// ── SVG Diagram Generator ─────────────────────────────────────────────────────
+function generateDiagram(data, board) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 1100 740');
+  svg.style.width = '100%';
+  svg.style.height = 'auto';
+  svg.style.display = 'block';
+
+  const defs = document.createElementNS(ns, 'defs');
+
+  // Glow filter for board
+  const filter = document.createElementNS(ns, 'filter');
+  filter.setAttribute('id', 'board-glow');
+  filter.innerHTML = '<feGaussianBlur stdDeviation="4" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>';
+  defs.appendChild(filter);
+
+  // Arrow markers
+  const colors = { power:'#f85149', gnd:'#484f58', signal:'#58a6ff', analog:'#bc8cff', default:'#7d8590' };
+  Object.entries(colors).forEach(([name, color]) => {
+    const marker = document.createElementNS(ns, 'marker');
+    marker.setAttribute('id', 'arr-'+name);
+    marker.setAttribute('markerWidth', '10'); marker.setAttribute('markerHeight', '10');
+    marker.setAttribute('refX', '9'); marker.setAttribute('refY', '3');
+    marker.setAttribute('orient', 'auto'); marker.setAttribute('markerUnits', 'strokeWidth');
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', 'M0,0 L0,6 L9,3 z'); path.setAttribute('fill', color);
+    marker.appendChild(path); defs.appendChild(marker);
+  });
+  svg.appendChild(defs);
+
+  const spec = getBoardSpec(board);
+  const boardX = 550, boardY = 370;
+  const pinPositions = {};
+  const usedPins = new Set();
+
+  // Determine which pins are used in wiring
+  (data.wiring || []).forEach(w => {
+    const bp1 = findPin(spec, w.from);
+    const bp2 = findPin(spec, w.to);
+    if (bp1) usedPins.add(bp1.name.toLowerCase());
+    if (bp2) usedPins.add(bp2.name.toLowerCase());
+  });
+  // Always label power pins
+  spec.pins.forEach(p => {
+    if (p.type === 'power' || p.type === 'gnd') usedPins.add(p.name.toLowerCase());
+  });
+
+  // ── Background grid ──
+  const gridGroup = document.createElementNS(ns, 'g');
+  gridGroup.setAttribute('opacity', '0.05');
+  for (let x = 0; x <= 1100; x += 40) {
+    const line = document.createElementNS(ns, 'line');
+    line.setAttribute('x1', x); line.setAttribute('y1', 0);
+    line.setAttribute('x2', x); line.setAttribute('y2', 740);
+    line.setAttribute('stroke', 'var(--accent)'); line.setAttribute('stroke-width', '1');
+    gridGroup.appendChild(line);
+  }
+  for (let y = 0; y <= 740; y += 40) {
+    const line = document.createElementNS(ns, 'line');
+    line.setAttribute('x1', 0); line.setAttribute('y1', y);
+    line.setAttribute('x2', 1100); line.setAttribute('y2', y);
+    line.setAttribute('stroke', 'var(--accent)'); line.setAttribute('stroke-width', '1');
+    gridGroup.appendChild(line);
+  }
+  svg.appendChild(gridGroup);
+
+  // ── Wires (drawn first so they appear behind board & components) ──
+  const wireGroup = document.createElementNS(ns, 'g');
+  wireGroup.setAttribute('opacity', '0.9');
+
+  (data.wiring || []).forEach(w => {
+    let wireType = 'default';
+    const f = (w.from||'').toLowerCase();
+    const t = (w.to||'').toLowerCase();
+    if (f.includes('5v') || f.includes('3.3v') || f.includes('vcc') || f.includes('vin') || f.includes('vsys') || f.includes('vbus')) wireType = 'power';
+    else if (f.includes('gnd') || f.includes('ground') || f.includes('agnd')) wireType = 'gnd';
+    else if (t.match(/a\d+/) || t.includes('analog') || t.includes('adc')) wireType = 'analog';
+    else wireType = 'signal';
+
+    let x1, y1, x2, y2;
+    let fromCompName = null, toCompName = null;
+
+    for (const c of (data.components||[])) {
+      const cn = c.name.toLowerCase();
+      if (f.startsWith(cn+' ') || f.includes(cn)) { fromCompName = cn; break; }
+    }
+    for (const c of (data.components||[])) {
+      const cn = c.name.toLowerCase();
+      if (t.startsWith(cn+' ') || t.includes(cn)) { toCompName = cn; break; }
+    }
+
+    if (fromCompName) {
+      // component center will be computed later; for now use placeholder and update after comps rendered
+      x1 = boardX; y1 = boardY;
+    } else {
+      const bp = findPin(spec, w.from);
+      if (bp) { x1 = boardX + bp.x; y1 = boardY + bp.y; }
+      else { x1 = boardX; y1 = boardY; }
+    }
+
+    if (toCompName) {
+      x2 = boardX; y2 = boardY;
+    } else {
+      const bp = findPin(spec, w.to);
+      if (bp) { x2 = boardX + bp.x; y2 = boardY + bp.y; }
+      else { x2 = boardX; y2 = boardY; }
+    }
+
+    // Store wire data for second pass after components are placed
+    wireGroup._wires = wireGroup._wires || [];
+    wireGroup._wires.push({x1,y1,x2,y2,wireType,note:w.note,fromCompName,toCompName});
+  });
+
+  svg.appendChild(wireGroup);
+
+  // ── Board shadow ──
+  const shadow = document.createElementNS(ns, 'rect');
+  shadow.setAttribute('x', boardX - spec.w/2 + 6);
+  shadow.setAttribute('y', boardY - spec.h/2 + 6);
+  shadow.setAttribute('width', spec.w);
+  shadow.setAttribute('height', spec.h);
+  shadow.setAttribute('rx', 12);
+  shadow.setAttribute('fill', 'rgba(0,0,0,0.35)');
+  svg.appendChild(shadow);
+
+  // ── Pin headers (strips) ──
+  if (spec.headers) {
+    spec.headers.forEach(h => {
+      const hr = document.createElementNS(ns, 'rect');
+      hr.setAttribute('x', boardX + h.x - h.w/2);
+      hr.setAttribute('y', boardY + h.y - h.h/2);
+      hr.setAttribute('width', h.w);
+      hr.setAttribute('height', h.h);
+      hr.setAttribute('rx', 3);
+      hr.setAttribute('fill', 'var(--surface2)');
+      hr.setAttribute('stroke', 'var(--border)');
+      hr.setAttribute('stroke-width', '1');
+      svg.appendChild(hr);
+    });
+  }
+
+  // ── Board body ──
+  const rect = document.createElementNS(ns, 'rect');
+  rect.setAttribute('x', boardX - spec.w/2);
+  rect.setAttribute('y', boardY - spec.h/2);
+  rect.setAttribute('width', spec.w);
+  rect.setAttribute('height', spec.h);
+  rect.setAttribute('rx', 12);
+  rect.setAttribute('fill', 'var(--surface)');
+  rect.setAttribute('stroke', 'var(--accent)');
+  rect.setAttribute('stroke-width', '2.5');
+  rect.setAttribute('filter', 'url(#board-glow)');
+  svg.appendChild(rect);
+
+  // ── USB port decoration ──
+  const usb = document.createElementNS(ns, 'rect');
+  usb.setAttribute('x', boardX - 24);
+  usb.setAttribute('y', boardY - spec.h/2 - 14);
+  usb.setAttribute('width', 48);
+  usb.setAttribute('height', 14);
+  usb.setAttribute('rx', 4);
+  usb.setAttribute('fill', 'var(--surface2)');
+  usb.setAttribute('stroke', 'var(--border)');
+  usb.setAttribute('stroke-width', '1');
+  svg.appendChild(usb);
+
+  // ── Board label with background pill ──
+  const labelBg = document.createElementNS(ns, 'rect');
+  labelBg.setAttribute('x', boardX - 60);
+  labelBg.setAttribute('y', boardY - 14);
+  labelBg.setAttribute('width', 120);
+  labelBg.setAttribute('height', 28);
+  labelBg.setAttribute('rx', 6);
+  labelBg.setAttribute('fill', 'var(--surface)');
+  labelBg.setAttribute('stroke', 'var(--border2)');
+  labelBg.setAttribute('stroke-width', '1');
+  svg.appendChild(labelBg);
+
+  const boardLabel = document.createElementNS(ns, 'text');
+  boardLabel.setAttribute('x', boardX);
+  boardLabel.setAttribute('y', boardY + 5);
+  boardLabel.setAttribute('text-anchor', 'middle');
+  boardLabel.setAttribute('fill', 'var(--text)');
+  boardLabel.setAttribute('font-size', '15');
+  boardLabel.setAttribute('font-weight', '700');
+  boardLabel.setAttribute('font-family', 'Syne, sans-serif');
+  boardLabel.textContent = board;
+  svg.appendChild(boardLabel);
+
+  // ── Board pins ──
+  spec.pins.forEach(p => {
+    const px = boardX + p.x, py = boardY + p.y;
+    const circle = document.createElementNS(ns, 'circle');
+    circle.setAttribute('cx', px); circle.setAttribute('cy', py); circle.setAttribute('r', 5);
+    circle.setAttribute('fill', colors[p.type] || colors.default);
+    circle.setAttribute('stroke', 'var(--surface)'); circle.setAttribute('stroke-width', '1.5');
+    svg.appendChild(circle);
+
+    if (usedPins.has(p.name.toLowerCase())) {
+      const label = document.createElementNS(ns, 'text');
+      let lx = px, ly = py, anchor = 'middle';
+      const offset = 16;
+      if (p.y <= -spec.h/2 + 15) { ly = py - offset; }
+      else if (p.y >= spec.h/2 - 15) { ly = py + offset + 4; }
+      else if (p.x <= -spec.w/2 + 15) { lx = px - offset; anchor = 'end'; }
+      else { lx = px + offset; anchor = 'start'; }
+
+      label.setAttribute('x', lx);
+      label.setAttribute('y', ly + 3);
+      label.setAttribute('text-anchor', anchor);
+      label.setAttribute('fill', 'var(--muted)');
+      label.setAttribute('font-size', '9');
+      label.setAttribute('font-family', 'JetBrains Mono, monospace');
+      label.setAttribute('font-weight', '500');
+      label.textContent = p.name;
+      svg.appendChild(label);
+    }
+    pinPositions[p.name.toLowerCase()] = {x:px, y:py, type:p.type};
+  });
+
+  // ── Components ──
+  const compList = data.components || [];
+  const radius = 360;
+  const compPositions = {};
+
+  compList.forEach((c, i) => {
+    const angle = (i / Math.max(compList.length, 1)) * 2 * Math.PI - Math.PI/2;
+    const cx = boardX + radius * Math.cos(angle);
+    const cy = boardY + radius * Math.sin(angle);
+    const w = 140, h = 60;
+
+    // Connector dot
+    const dot = document.createElementNS(ns, 'circle');
+    dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.setAttribute('r', 4);
+    dot.setAttribute('fill', 'var(--accent)');
+    svg.appendChild(dot);
+
+    // Shadow
+    const cShadow = document.createElementNS(ns, 'rect');
+    cShadow.setAttribute('x', cx - w/2 + 4);
+    cShadow.setAttribute('y', cy - h/2 + 4);
+    cShadow.setAttribute('width', w); cShadow.setAttribute('height', h);
+    cShadow.setAttribute('rx', 10);
+    cShadow.setAttribute('fill', 'rgba(0,0,0,0.3)');
+    svg.appendChild(cShadow);
+
+    // Body
+    const box = document.createElementNS(ns, 'rect');
+    box.setAttribute('x', cx - w/2); box.setAttribute('y', cy - h/2);
+    box.setAttribute('width', w); box.setAttribute('height', h);
+    box.setAttribute('rx', 10);
+    box.setAttribute('fill', 'var(--surface2)');
+    box.setAttribute('stroke', 'var(--border)');
+    box.setAttribute('stroke-width', '1.5');
+    svg.appendChild(box);
+
+    // Icon
+    const iconText = document.createElementNS(ns, 'text');
+    iconText.setAttribute('x', cx - w/2 + 16);
+    iconText.setAttribute('y', cy + 5);
+    iconText.setAttribute('fill', 'var(--accent)');
+    iconText.setAttribute('font-size', '20');
+    iconText.textContent = icon(c.type);
+    svg.appendChild(iconText);
+
+    // Name
+    const nameText = document.createElementNS(ns, 'text');
+    nameText.setAttribute('x', cx + 14);
+    nameText.setAttribute('y', cy + 4);
+    nameText.setAttribute('text-anchor', 'middle');
+    nameText.setAttribute('fill', 'var(--text)');
+    nameText.setAttribute('font-size', '12');
+    nameText.setAttribute('font-weight', '600');
+    nameText.setAttribute('font-family', 'DM Sans, sans-serif');
+    const displayName = c.name.length > 20 ? c.name.slice(0,18)+'..' : c.name;
+    nameText.textContent = displayName;
+    svg.appendChild(nameText);
+
+    // Qty
+    const qtyText = document.createElementNS(ns, 'text');
+    qtyText.setAttribute('x', cx + w/2 - 10);
+    qtyText.setAttribute('y', cy - h/2 + 16);
+    qtyText.setAttribute('text-anchor', 'end');
+    qtyText.setAttribute('fill', 'var(--dim)');
+    qtyText.setAttribute('font-size', '10');
+    qtyText.setAttribute('font-family', 'JetBrains Mono, monospace');
+    qtyText.textContent = '×'+c.quantity;
+    svg.appendChild(qtyText);
+
+    compPositions[c.name.toLowerCase()] = {x:cx, y:cy, w, h, angle};
+  });
+
+  // ── Render wires now that component positions are known ──
+  if (wireGroup._wires) {
+    wireGroup._wires.forEach(w => {
+      let {x1,y1,x2,y2,wireType,note,fromCompName,toCompName} = w;
+
+      if (fromCompName && compPositions[fromCompName]) {
+        x1 = compPositions[fromCompName].x;
+        y1 = compPositions[fromCompName].y;
+      }
+      if (toCompName && compPositions[toCompName]) {
+        x2 = compPositions[toCompName].x;
+        y2 = compPositions[toCompName].y;
+      }
+
+      const midX = (x1 + x2) / 2;
+      const midY = (y1 + y2) / 2;
+      const toCenterX = midX - boardX;
+      const toCenterY = midY - boardY;
+      const distToCenter = Math.sqrt(toCenterX*toCenterX + toCenterY*toCenterY) || 1;
+      const push = 140;
+      const controlX = midX + (toCenterX / distToCenter) * push;
+      const controlY = midY + (toCenterY / distToCenter) * push;
+
+      const path = document.createElementNS(ns, 'path');
+      path.setAttribute('d', `M${x1},${y1} Q${controlX},${controlY} ${x2},${y2}`);
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke', colors[wireType]);
+      path.setAttribute('stroke-width', '2.5');
+      path.setAttribute('stroke-linecap', 'round');
+      path.setAttribute('marker-end', `url(#arr-${wireType})`);
+      wireGroup.appendChild(path);
+
+      if (note) {
+        const nt = document.createElementNS(ns, 'text');
+        nt.setAttribute('x', controlX);
+        nt.setAttribute('y', controlY - 8);
+        nt.setAttribute('text-anchor', 'middle');
+        nt.setAttribute('fill', 'var(--dim)');
+        nt.setAttribute('font-size', '9');
+        nt.setAttribute('font-family', 'DM Sans, sans-serif');
+        nt.textContent = note.length > 28 ? note.slice(0,25)+'..' : note;
+        wireGroup.appendChild(nt);
+      }
+    });
+  }
+
+  return svg;
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderResults(data, board) {
+  setLoading(false);
+  currentPack = {board, description: document.getElementById('description').value.trim(), data, timestamp: Date.now()};
+
+  const lang = /raspberry/i.test(board) ? 'python' : 'cpp';
+  const langLabel = lang === 'python' ? 'Python' : 'C++ / Arduino';
+
+  const comps = (data.components || []).map(c => `
+    <div class="comp">
+      <div class="cicon t-${esc(c.type||'other')}">${icon(c.type)}</div>
+      <div style="flex:1;min-width:0">
+        <div class="cname">${esc(c.name)}</div>
+        <div class="cnote">${esc(c.note)}</div>
+      </div>
+      <div class="cqty">×${esc(c.quantity)}</div>
+    </div>`).join('');
+
+  const wires = (data.wiring || []).map(w => `
+    <div class="wire">
+      <div class="wcxn">
+        <div class="wnode wfrom"><span>${icon(w.from_type)}</span><span title="${esc(w.from)}">${esc(w.from)}</span></div>
+        <div class="warr">→</div>
+        <div class="wnode wto"><span>${icon(w.to_type)}</span><span title="${esc(w.to)}">${esc(w.to)}</span></div>
+      </div>
+      ${w.note ? `<div class="wnote">${esc(w.note)}</div>` : ''}
+    </div>`).join('');
+
+  let highlighted;
+  try { highlighted = hljs.highlight(data.code || '', { language: lang }).value; }
+  catch { highlighted = esc(data.code || ''); }
+
+  const mistakes = (data.common_mistakes || []).map(m => `
+    <div class="mistake">
+      <div class="mlabel" style="color:var(--orange)">⚠ The problem</div>
+      <div class="mproblem">${esc(m.problem)}</div>
+      <div class="mlabel" style="color:var(--green)">↳ The fix</div>
+      <div class="mfix">${esc(m.fix)}</div>
+    </div>`).join('');
+
+  codeText = data.code || '';
+
+  document.getElementById('results').innerHTML = `
+    <div class="res-hd">
+      <div class="proj-name">${esc(data.project_name || 'Your Starter Pack')}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+        <button class="btn-sm" onclick="saveToLibrary()">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 1h10l1 1v13l-1 1-5-3-5 3-1-1V2l1-1z"/></svg>
+          Save
+        </button>
+        <button class="btn-sm" onclick="sharePack()">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="4" r="2"/><circle cx="4" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><path d="M8 6v2M6 10l2-2 2 2"/></svg>
+          Share
+        </button>
+        <button class="btn-sm" onclick="exportPack()">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 15V5M4 9l4 4 4-4M2 1h12"/></svg>
+          Export
+        </button>
+        <button class="btn-sm" onclick="resetAll()">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 6h10M5 2L1 6l4 4"/></svg>
+          New
+        </button>
+      </div>
+    </div>
+
+    <div class="res-tabs">
+      <button class="res-tab active" onclick="switchResTab('overview',this)">Overview</button>
+      <button class="res-tab" onclick="switchResTab('diagram',this)">Diagram</button>
+      <button class="res-tab" onclick="switchResTab('bom',this)">BOM</button>
+      <button class="res-tab" onclick="switchResTab('code',this)">Code</button>
+      <button class="res-tab" onclick="switchResTab('simulate',this)">Simulate</button>
+    </div>
+
+    <div id="res-overview" class="res-tab-content active">
+      <div class="res-grid">
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="14" height="14" rx="3"/><path d="M5 8h6M8 5v6"/></svg>
+              Components needed
+            </div>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">${(data.components||[]).length} parts</span>
+          </div>
+          <div class="card-body" style="padding:4px 20px 16px">${comps||'<span style="color:var(--dim);font-size:13px">No components listed.</span>'}</div>
+        </div>
+
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-title">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h3v8H2M11 4h3v8h-3M5 8h6"/></svg>
+              Wiring plan
+            </div>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">${(data.wiring||[]).length} connections</span>
+          </div>
+          <div class="card-body">${wires||'<span style="color:var(--dim);font-size:13px">No wiring listed.</span>'}</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-title" style="color:var(--orange)">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 1l7 14H1L8 1z"/><path d="M8 6.5v3M8 11.5v.5"/></svg>
+            What'll probably go wrong
+          </div>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">${(data.common_mistakes||[]).length} pitfalls</span>
+        </div>
+        <div class="card-body">${mistakes||'<span style="color:var(--dim);font-size:13px">No common mistakes listed.</span>'}</div>
+      </div>
+    </div>
+
+    <div id="res-diagram" class="res-tab-content">
+      <div class="diagram-wrap" id="diagram-wrap"></div>
+      <div class="diagram-legend">
+        <span><span class="leg-dot" style="background:var(--red)"></span> Power/VCC</span>
+        <span><span class="leg-dot" style="background:var(--dim)"></span> Ground</span>
+        <span><span class="leg-dot" style="background:var(--blue)"></span> Digital Signal</span>
+        <span><span class="leg-dot" style="background:var(--purple)"></span> Analog</span>
+      </div>
+    </div>
+
+    <div id="res-bom" class="res-tab-content">
+      <div class="card"><div class="card-body" id="bom-body"></div></div>
+    </div>
+
+    <div id="res-code" class="res-tab-content">
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-hd">
+          <div class="card-title">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 4L1 8l4 4M11 4l4 4-4 4"/></svg>
+            Starter code
+            <span class="lang-tag">${langLabel}</span>
+          </div>
+          <button class="btn-sm" id="copy-btn" onclick="copyCode()">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="2"/><path d="M11 5V3a1 1 0 00-1-1H3a1 1 0 00-1 1v7a1 1 0 001 1h2"/></svg>
+            Copy
+          </button>
+        </div>
+        <pre><code class="hljs language-${lang}">${highlighted}</code></pre>
+      </div>
+    </div>
+
+    <div id="res-simulate" class="res-tab-content">
+      <div class="sim-grid" id="sim-grid"></div>
+    </div>
+  `;
+
+  document.getElementById('results').classList.add('show');
+
+  setTimeout(() => {
+    const diagram = generateDiagram(data, board);
+    const wrap = document.getElementById('diagram-wrap');
+    if (wrap) wrap.appendChild(diagram);
+    renderBOM(data);
+    renderSimulate(data, board);
+  }, 0);
+
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── BOM Renderer ──────────────────────────────────────────────────────────────
+function renderBOM(data) {
+  const container = document.getElementById('bom-body');
+  if (!container) return;
+  const comps = data.components || [];
+  let total = 0;
+  let rows = '';
+
+  comps.forEach(c => {
+    const priceItem = priceLookup(c.name);
+    const unit = priceItem ? priceItem.price : null;
+    const qty = parseInt(c.quantity) || 1;
+    const sub = unit ? (unit * qty) : null;
+    if (sub) total += sub;
+
+    const links = priceItem ? `
+      <a class="bom-link" href="${priceItem.urls.dig}" target="_blank">Digi-Key</a>
+      <a class="bom-link" href="${priceItem.urls.mous}" target="_blank">Mouser</a>
+      <a class="bom-link" href="${priceItem.urls.amz}" target="_blank">Amazon</a>
+    ` : '<span style="color:var(--dim);font-size:11px">—</span>';
+
+    rows += `
+      <tr>
+        <td><strong>${esc(c.name)}</strong><div style="font-size:11px;color:var(--muted);margin-top:2px">${esc(c.note)}</div></td>
+        <td>${esc(c.quantity)}</td>
+        <td>${unit ? '$'+unit.toFixed(2) : '—'}</td>
+        <td>${sub ? '$'+sub.toFixed(2) : '—'}</td>
+        <td>${links}</td>
+      </tr>
+    `;
+  });
+
+  container.innerHTML = `
+    <table class="bom-table">
+      <thead><tr><th>Component</th><th>Qty</th><th>Est. Unit</th><th>Subtotal</th><th>Buy</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="bom-total">
+      <span style="color:var(--muted);font-weight:500">Estimated total</span>
+      <span>$${total.toFixed(2)}</span>
+    </div>
+    <div style="font-size:12px;color:var(--dim);margin-top:8px">
+      Prices are approximate for budgeting. Click a retailer to see live stock & pricing. Replace Amazon tag <code>pin1-20</code> in the source with your affiliate ID.
+    </div>
+  `;
+}
+
+// ── Simulate / Wokwi Renderer ───────────────────────────────────────────────────
+function renderSimulate(data, board) {
+  const container = document.getElementById('sim-grid');
+  if (!container) return;
+
+  const wokwiBoard = toWokwiBoard(board);
+  const parts = [{type:wokwiBoard, id:'board', top:20, left:20, attrs:{}}];
+  const conns = [];
+  let nextLeft = 240, nextTop = 20;
+
+  (data.components || []).forEach((c, i) => {
+    const wp = toWokwiPart(c.name);
+    if (!wp) return;
+    parts.push({type:wp, id:'part'+i, top:nextTop, left:nextLeft, attrs:{}});
+    nextLeft += 140;
+    if (nextLeft > 600) { nextLeft = 240; nextTop += 120; }
+  });
+
+  (data.wiring || []).forEach((w, i) => {
+    const f = (w.from||'').toLowerCase();
+    const t = (w.to||'').toLowerCase();
+    let color = 'blue';
+    if (f.includes('5v') || f.includes('vcc')) color = 'red';
+    else if (f.includes('gnd')) color = 'black';
+    else if (f.includes('sda') || f.includes('scl')) color = 'orange';
+
+    let fromId = 'board', fromPin = f.replace(/.*?\b(d\d+|gpio\d+|gp\d+|a\d+|5v|3.3v|gnd|vin|sda|scl)\b.*/i, '$1').toUpperCase();
+    let toId = 'board', toPin = t.replace(/.*?\b(d\d+|gpio\d+|gp\d+|a\d+|5v|3.3v|gnd|vin|sda|scl)\b.*/i, '$1').toUpperCase();
+
+    for (let idx=0; idx<(data.components||[]).length; idx++) {
+      const cn = data.components[idx].name.toLowerCase();
+      if (f.includes(cn)) { fromId = 'part'+idx; fromPin = 'VCC'; }
+      if (t.includes(cn)) { toId = 'part'+idx; toPin = 'VCC'; }
+    }
+
+    conns.push([`${fromId}:${fromPin}`, `${toId}:${toPin}`, color, []]);
+  });
+
+  const diagramJson = JSON.stringify({version:1, author:'Pin1', editor:'wokwi', parts, connections:conns}, null, 2);
+  const codeFile = /raspberry/i.test(board) ? 'main.py' : 'sketch.ino';
+
+  container.innerHTML = `
+    <div class="sim-card">
+      <h4>1. diagram.json</h4>
+      <p>Wokwi circuit definition. Download and import into a new Wokwi project.</p>
+      <pre>${esc(diagramJson)}</pre>
+      <button class="btn-sm" onclick="downloadText('diagram.json', this.previousElementSibling.textContent)">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 15V5M4 9l4 4 4-4M2 1h12"/></svg>
+        Download diagram.json
+      </button>
+    </div>
+    <div class="sim-card">
+      <h4>2. ${codeFile}</h4>
+      <p>Copy your generated code into the code tab in Wokwi.</p>
+      <pre>${esc((data.code||'').slice(0,800))}${(data.code||'').length>800?'...':''}</pre>
+      <button class="btn-sm" onclick="downloadText('${codeFile}', codeText)">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 15V5M4 9l4 4 4-4M2 1h12"/></svg>
+        Download ${codeFile}
+      </button>
+    </div>
+    <div class="sim-card" style="grid-column:1/-1">
+      <h4>3. Open in Wokwi</h4>
+      <p style="margin-bottom:12px">Wokwi is a free browser-based electronics simulator. To use these files:</p>
+      <ol style="font-size:13px;color:var(--muted);line-height:1.8;margin-left:18px;margin-bottom:12px">
+        <li>Go to <a href="https://wokwi.com" target="_blank" style="color:var(--accent)">wokwi.com</a> and create a new project for <strong>${esc(board)}</strong>.</li>
+        <li>Replace the default <code>diagram.json</code> with the downloaded one.</li>
+        <li>Paste the code into <code>${codeFile}</code>.</li>
+        <li>Hit Start Simulation.</li>
+      </ol>
+      <a class="btn-sm" href="https://wokwi.com" target="_blank" style="text-decoration:none;display:inline-flex">
+        Launch Wokwi →
+      </a>
+    </div>
+  `;
+}
+
+function downloadText(filename, text) {
+  const blob = new Blob([text], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement('a'), {href:url, download:filename});
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ── Copy code (HTTPS + fallback) ──────────────────────────────────────────────
+function copyCode() {
+  const btn = document.getElementById('copy-btn');
+  const done = () => {
+    btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 8l4 4 8-8"/></svg> Copied!`;
+    setTimeout(() => {
+      btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="5" y="5" width="9" height="9" rx="2"/><path d="M11 5V3a1 1 0 00-1-1H3a1 1 0 00-1 1v7a1 1 0 001 1h2"/></svg> Copy`;
+    }, 2200);
+  };
+
+  if (navigator.clipboard && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    navigator.clipboard.writeText(codeText).then(done).catch(fallbackCopy);
+  } else {
+    fallbackCopy();
+  }
+
+  function fallbackCopy() {
+    const ta = Object.assign(document.createElement('textarea'), {
+      value: codeText,
+      style: 'position:fixed;opacity:0;pointer-events:none'
+    });
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (ok) done();
+    else btn.textContent = 'Failed — copy manually';
+  }
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
+function resetAll() {
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('err-box').classList.remove('show');
+  document.getElementById('description').value = '';
+  document.getElementById('char-count').textContent = '0 / 2000';
+  document.getElementById('char-count').className = 'char-count';
+  codeText = ''; currentPack = null;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  setTimeout(() => document.getElementById('description').focus(), 400);
+}
+
+// ── Share ─────────────────────────────────────────────────────────────────────
+function sharePack() {
+  if (!currentPack) return;
+  try {
+    const payload = btoa(unescape(encodeURIComponent(JSON.stringify(currentPack))));
+    const url = location.origin + location.pathname + '#pack=' + payload;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(() => alert('Share link copied to clipboard!'));
+    } else {
+      prompt('Copy this link:', url);
+    }
+  } catch(e) { alert('Could not create share link.'); }
+}
+
+function loadFromHash() {
+  const hash = location.hash.slice(1);
+  if (!hash.startsWith('pack=')) return;
+  try {
+    const payload = JSON.parse(decodeURIComponent(escape(atob(hash.slice(5)))));
+    if (!payload || !payload.data) return;
+    currentPack = payload;
+    document.getElementById('board').value = payload.board || 'Arduino Uno';
+    document.getElementById('description').value = payload.description || '';
+    document.getElementById('char-count').textContent = (payload.description||'').length + ' / 2000';
+    renderResults(payload.data, payload.board);
+    history.replaceState(null, null, ' ');
+  } catch(e) { console.error('Failed to load pack from URL', e); }
+}
+
+// ── Export / Import Single Pack ─────────────────────────────────────────────────
+function exportPack() {
+  if (!currentPack) return;
+  downloadText('pin1-pack.json', JSON.stringify(currentPack, null, 2));
+}
+
+// ── Library (localStorage) ──────────────────────────────────────────────────
+const LIB_KEY = 'pin1_library';
+
+function getLibrary() {
+  try { return JSON.parse(localStorage.getItem(LIB_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function saveToLibrary() {
+  if (!currentPack) { alert('Generate a pack first!'); return; }
+  const lib = getLibrary();
+  const entry = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,5),
+    timestamp: Date.now(),
+    name: currentPack.data.project_name || 'Untitled Project',
+    board: currentPack.board,
+    description: currentPack.description,
+    data: currentPack.data
+  };
+  lib.unshift(entry);
+  localStorage.setItem(LIB_KEY, JSON.stringify(lib));
+  alert('Saved to Library!');
+  renderLibrary();
+}
+
+function renderLibrary() {
+  const grid = document.getElementById('lib-grid');
+  const lib = getLibrary();
+  if (!lib.length) {
+    grid.innerHTML = '<div class="lib-empty">No saved packs yet. Generate a project and hit <strong>Save</strong> to add it here.</div>';
+    return;
+  }
+  grid.innerHTML = lib.map(item => `
+    <div class="lib-card" onclick="loadLibraryItem('${item.id}')">
+      <div class="lib-tag">${esc(item.board)} · ${new Date(item.timestamp).toLocaleDateString()}</div>
+      <h3>${esc(item.name)}</h3>
+      <div class="lib-meta">${esc(item.description.slice(0,80))}${item.description.length>80?'...':''}</div>
+      <div class="lib-actions" onclick="event.stopPropagation()">
+        <button class="btn-sm" onclick="loadLibraryItem('${item.id}')">Load</button>
+        <button class="btn-sm" onclick="deleteLibraryItem('${item.id}')" style="color:var(--red);border-color:rgba(248,81,73,.3)">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function loadLibraryItem(id) {
+  const lib = getLibrary();
+  const item = lib.find(x => x.id === id);
+  if (!item) return;
+  currentPack = {board: item.board, description: item.description, data: item.data, timestamp: item.timestamp};
+  document.getElementById('board').value = item.board;
+  document.getElementById('description').value = item.description;
+  document.getElementById('char-count').textContent = item.description.length + ' / 2000';
+  switchMainTab('generator');
+  renderResults(item.data, item.board);
+}
+
+function deleteLibraryItem(id) {
+  if (!confirm('Delete this saved pack?')) return;
+  let lib = getLibrary();
+  lib = lib.filter(x => x.id !== id);
+  localStorage.setItem(LIB_KEY, JSON.stringify(lib));
+  renderLibrary();
+}
+
+function exportLibrary() {
+  const lib = getLibrary();
+  if (!lib.length) { alert('Library is empty.'); return; }
+  downloadText('pin1-library.json', JSON.stringify(lib, null, 2));
+}
+
+function importLibrary() {
+  document.getElementById('lib-import-input').click();
+}
+
+function handleLibImport(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!Array.isArray(imported)) throw new Error('Invalid format');
+      const existing = getLibrary();
+      const merged = [...imported, ...existing];
+      localStorage.setItem(LIB_KEY, JSON.stringify(merged));
+      renderLibrary();
+      alert(`Imported ${imported.length} packs.`);
+    } catch(err) { alert('Import failed: ' + err.message); }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  loadFromHash();
+  renderLibrary();
+});
+</script>
+</body>
+</html>
